@@ -27,6 +27,8 @@ export default function MessagesPanel() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [otherTyping, setOtherTyping] = useState(false);
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [lastMsgMap, setLastMsgMap] = useState({});
   const messagesEnd = useRef(null);
   const inputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -37,8 +39,13 @@ export default function MessagesPanel() {
   useEffect(() => {
     const fetchConversations = async () => {
       try {
-        const data = await matchApi.getConnections();
-        setConversations(data);
+        const [convos, perMatch] = await Promise.all([
+          matchApi.getConnections(),
+          messageApi.getUnreadPerMatch(),
+        ]);
+        setConversations(convos);
+        setUnreadCounts(perMatch.unreadMap || {});
+        setLastMsgMap(perMatch.lastMsgMap || {});
       } catch (err) {
         console.error(err);
       } finally {
@@ -78,6 +85,33 @@ export default function MessagesPanel() {
     fetchMessages();
   }, [activeConvo, isSelf]);
 
+  // Socket: global notification listener (unread counts + last message)
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNotification = ({ message, matchId }) => {
+      // Don't increment if we're actively viewing this conversation
+      if (activeConvo?._id === matchId && !isSelf) return;
+
+      setUnreadCounts((prev) => ({
+        ...prev,
+        [matchId]: (prev[matchId] || 0) + 1,
+      }));
+      setLastMsgMap((prev) => ({
+        ...prev,
+        [matchId]: {
+          content: message.content,
+          createdAt: message.createdAt,
+          senderId: message.sender?._id || message.sender,
+          senderName: message.sender?.name || 'Someone',
+        },
+      }));
+    };
+
+    socket.on('message:notification', handleNotification);
+    return () => socket.off('message:notification', handleNotification);
+  }, [socket, activeConvo, isSelf]);
+
   // Socket: join/leave match rooms, listen for messages & typing
   useEffect(() => {
     if (!socket) return;
@@ -102,10 +136,19 @@ export default function MessagesPanel() {
     const handleMessage = ({ message, matchId: msgMatchId }) => {
       if (msgMatchId === matchId) {
         setMessages((prev) => {
-          // Avoid duplicates
           if (prev.some((m) => m._id === message._id)) return prev;
           return [...prev, message];
         });
+        // Update last message preview for this conversation
+        setLastMsgMap((prev) => ({
+          ...prev,
+          [matchId]: {
+            content: message.content,
+            createdAt: message.createdAt,
+            senderId: message.sender?._id || message.sender,
+            senderName: message.sender?.name || 'Someone',
+          },
+        }));
       }
     };
 
@@ -247,6 +290,12 @@ export default function MessagesPanel() {
     setShowGif(false);
     setShowSticker(false);
     setOtherTyping(false);
+    // Clear unread count for this conversation
+    setUnreadCounts((prev) => {
+      const next = { ...prev };
+      delete next[match._id];
+      return next;
+    });
   };
 
   const renderMessage = (msg, i) => {
@@ -323,6 +372,11 @@ export default function MessagesPanel() {
             if (!other) return null;
             const isActive = activeConvo?._id === match._id;
             const online = isUserOnline(other._id);
+            const unread = unreadCounts[match._id] || 0;
+            const lastMsg = lastMsgMap[match._id];
+            const preview = lastMsg
+              ? (lastMsg.senderId === myId ? 'You: ' : '') + (lastMsg.content?.startsWith('sticker:') ? '🎨 Sticker' : lastMsg.content?.startsWith('https://') ? '🖼️ GIF' : (lastMsg.content || '').slice(0, 40) + ((lastMsg.content || '').length > 40 ? '...' : ''))
+              : 'Tap to start chatting';
             return (
               <button
                 key={match._id}
@@ -350,8 +404,29 @@ export default function MessagesPanel() {
                 </div>
                 <div className="chat-convo-info">
                   <span className="chat-convo-name">{other.name}</span>
-                  <span className="chat-convo-preview">Tap to start chatting</span>
+                  <span className="chat-convo-preview" style={unread > 0 ? { color: 'var(--accent)', fontWeight: 600 } : {}}>
+                    {preview}
+                  </span>
                 </div>
+                {unread > 0 && (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '20px',
+                    height: '20px',
+                    padding: '0 6px',
+                    borderRadius: '10px',
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    flexShrink: 0,
+                    marginLeft: 'auto',
+                  }}>
+                    {unread > 99 ? '99+' : unread}
+                  </span>
+                )}
               </button>
             );
           })}

@@ -77,6 +77,8 @@ export const messageApi = {
 
   getUnreadCount: () => request("/api/messages/unread/count"),
 
+  getUnreadPerMatch: () => request("/api/messages/unread/per-match"),
+
   // Self-chat
   getSelfMessages: () => request("/api/messages/self/messages"),
   sendSelf: (content) =>

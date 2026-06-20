@@ -61,15 +61,29 @@ export default function Notifications({ onNavigate }) {
       }, ...prev].slice(0, 20));
     };
 
-    const handleMessageReceived = () => {
+    const handleMessageReceived = ({ matchId, message } = {}) => {
       setUnreadCount((prev) => prev + 1);
-      setNotifications((prev) => [{
-        id: `msg-${Date.now()}`,
-        type: 'message',
-        text: `You have a new message`,
-        time: new Date().toISOString(),
-        read: false,
-      }, ...prev].slice(0, 20));
+      setNotifications((prev) => {
+        const now = Date.now();
+        // Check if the most recent notification is a message within 5 minutes
+        if (
+          prev.length > 0 &&
+          prev[0].type === 'message' &&
+          !prev[0].read &&
+          now - new Date(prev[0].time).getTime() < 5 * 60 * 1000
+        ) {
+          const updated = { ...prev[0], count: (prev[0].count || 1) + 1 };
+          return [updated, ...prev.slice(1)].slice(0, 20);
+        }
+        return [{
+          id: `msg-${Date.now()}`,
+          type: 'message',
+          text: 'You have a new message',
+          time: new Date().toISOString(),
+          read: false,
+          count: 1,
+        }, ...prev].slice(0, 20);
+      });
     };
 
     socket.on('match:new', handleNewMatch);
@@ -110,7 +124,7 @@ export default function Notifications({ onNavigate }) {
     setOpen(false);
   };
 
-  const totalUnread = notifications.filter((n) => !n.read).length;
+  const totalUnread = notifications.reduce((sum, n) => sum + (!n.read ? (n.count || 1) : 0), 0);
 
   return (
     <div className="notif-wrapper" ref={dropdownRef}>
@@ -119,8 +133,8 @@ export default function Notifications({ onNavigate }) {
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
-        {(totalUnread > 0 || unreadCount > 0) && (
-          <span className="notif-badge">{totalUnread || unreadCount}</span>
+        {unreadCount > 0 && (
+          <span className="notif-badge">{unreadCount}</span>
         )}
       </button>
 
@@ -128,7 +142,7 @@ export default function Notifications({ onNavigate }) {
         <div className="notif-dropdown">
           <div className="notif-dropdown-header">
             <h3>Notifications</h3>
-            {(totalUnread > 0 || unreadCount > 0) && (
+            {unreadCount > 0 && (
               <button className="notif-mark-read" onClick={() => { markAllRead(); setUnreadCount(0); }}>Mark all read</button>
             )}
           </div>
@@ -149,7 +163,11 @@ export default function Notifications({ onNavigate }) {
                     {notif.type === 'match' ? '🤝' : '💬'}
                   </div>
                   <div className="notif-content">
-                    <p className="notif-text">{notif.text}</p>
+                    <p className="notif-text">
+                      {notif.type === 'message' && notif.count > 1
+                        ? `You have ${notif.count} new messages`
+                        : notif.text}
+                    </p>
                     <span className="notif-time">{formatTime(notif.time)}</span>
                   </div>
                   {!notif.read && <div className="notif-dot" />}

@@ -109,6 +109,76 @@ router.get("/unread/count", protect, async (req, res) => {
   }
 });
 
+// ================= GET UNREAD COUNT PER MATCH + LAST MESSAGE =================
+router.get("/unread/per-match", protect, async (req, res) => {
+  try {
+    const matches = await Match.find({
+      $or: [
+        { user1: req.user.id },
+        { user2: req.user.id }
+      ]
+    }).select("_id");
+
+    const matchIds = matches.map(m => m._id);
+
+    // Get unread counts per match
+    const unreadDocs = await Message.aggregate([
+      {
+        $match: {
+          match: { $in: matchIds },
+          sender: { $ne: new (require('mongoose').Types.ObjectId)(req.user.id) },
+          read: false,
+        },
+      },
+      { $group: { _id: "$match", count: { $sum: 1 } } },
+    ]);
+
+    const unreadMap = {};
+    unreadDocs.forEach((doc) => {
+      unreadMap[doc._id.toString()] = doc.count;
+    });
+
+    // Get last message per match
+    const lastMessages = await Message.aggregate([
+      { $match: { match: { $in: matchIds } } },
+      { $sort: { createdAt: -1 } },
+      { $group: { _id: "$match", lastMsg: { $first: "$$ROOT" } } },
+      {
+        $lookup: {
+          from: "users",
+          localField: "lastMsg.sender",
+          foreignField: "_id",
+          as: "lastMsg.sender",
+        },
+      },
+      { $unwind: { path: "$lastMsg.sender", preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          content: "$lastMsg.content",
+          createdAt: "$lastMsg.createdAt",
+          senderId: "$lastMsg.sender._id",
+          senderName: "$lastMsg.sender.name",
+        },
+      },
+    ]);
+
+    const lastMsgMap = {};
+    lastMessages.forEach((doc) => {
+      lastMsgMap[doc._id.toString()] = {
+        content: doc.content,
+        createdAt: doc.createdAt,
+        senderId: doc.senderId,
+        senderName: doc.senderName,
+      };
+    });
+
+    res.status(200).json({ unreadMap, lastMsgMap });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // ================= TYPING INDICATOR =================
 router.post("/typing", protect, async (req, res) => {
   try {
