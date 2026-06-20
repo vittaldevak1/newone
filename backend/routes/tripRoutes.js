@@ -179,7 +179,7 @@ router.put("/:tripId", protect, requirePhoto, async (req, res) => {
       return res.status(403).json({ message: "Not authorized to update this trip" });
     }
 
-    const { destination, startDate, endDate, activities, description, lookingFor, maxCompanions, status } = req.body;
+    const { destination, startDate, endDate, activities, description, lookingFor, maxCompanions, status, itinerary } = req.body;
 
     const updateFields = {};
     if (destination !== undefined) updateFields.destination = destination;
@@ -190,6 +190,7 @@ router.put("/:tripId", protect, requirePhoto, async (req, res) => {
     if (lookingFor !== undefined) updateFields.lookingFor = lookingFor;
     if (maxCompanions !== undefined) updateFields.maxCompanions = maxCompanions;
     if (status !== undefined) updateFields.status = status;
+    if (itinerary !== undefined) updateFields.itinerary = itinerary;
 
     const updated = await Trip.findByIdAndUpdate(
       req.params.tripId,

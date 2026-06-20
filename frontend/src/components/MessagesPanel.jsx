@@ -30,8 +30,10 @@ export default function MessagesPanel() {
   const [unreadCounts, setUnreadCounts] = useState({});
   const [lastMsgMap, setLastMsgMap] = useState({});
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [imagePreview, setImagePreview] = useState(null);
   const messagesEnd = useRef(null);
   const inputRef = useRef(null);
+  const imageInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const prevMatchId = useRef(null);
 
@@ -206,23 +208,23 @@ export default function MessagesPanel() {
   };
 
   const handleSend = async (content) => {
-    if (!content.trim() || !activeConvo || sending) return;
+    if ((!content.trim() && !imagePreview) || !activeConvo || sending) return;
     if (!user?.avatar) return;
 
     try {
       setSending(true);
+      const msgContent = imagePreview || content.trim();
 
       if (isSelf) {
-        const msg = await messageApi.sendSelf(content.trim());
+        const msg = await messageApi.sendSelf(msgContent);
         setMessages((prev) => [...prev, msg]);
       } else if (socket) {
-        // Send via socket
-        socket.emit('message:send', { matchId: activeConvo._id, content: content.trim() });
-        // Stop typing indicator
+        socket.emit('message:send', { matchId: activeConvo._id, content: msgContent });
         socket.emit('typing:stop', { matchId: activeConvo._id });
       }
 
       setInput('');
+      setImagePreview(null);
       setShowEmoji(false);
       setShowGif(false);
       setShowSticker(false);
@@ -232,6 +234,31 @@ export default function MessagesPanel() {
     } finally {
       setSending(false);
     }
+  };
+
+  const handleImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX = 800;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w > h) { h = (h / w) * MAX; w = MAX; }
+          else { w = (w / h) * MAX; h = MAX; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        setImagePreview(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const handleInputChange = (e) => {
@@ -317,6 +344,7 @@ export default function MessagesPanel() {
     if (!msg.sender) return null;
     const isGif = msg.content?.startsWith('https://') && (msg.content.includes('.gif') || msg.content.includes('giphy'));
     const isSticker = msg.content?.startsWith('sticker:');
+    const isImage = msg.content?.startsWith('data:image');
     const stickerId = isSticker ? msg.content.replace('sticker:', '') : null;
     const senderId = msg.sender._id || msg.sender;
     const isMe = isSelf || senderId === myId || senderId.toString() === myId.toString();
@@ -341,6 +369,8 @@ export default function MessagesPanel() {
           <div className="chat-msg-bubble">
             {isGif ? (
               <img src={msg.content} alt="GIF" className="chat-msg-gif" />
+            ) : isImage ? (
+              <img src={msg.content} alt="Photo" className="chat-msg-image" />
             ) : isSticker ? (
               <span className="chat-msg-sticker">{getStickerEmoji(stickerId)}</span>
             ) : (
@@ -596,7 +626,25 @@ export default function MessagesPanel() {
             )}
 
             <form className="chat-input-bar" onSubmit={handleSubmit}>
+              <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
+              {imagePreview && (
+                <div className="chat-image-preview">
+                  <img src={imagePreview} alt="Preview" />
+                  <button type="button" className="chat-image-preview-remove" onClick={() => setImagePreview(null)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+              )}
               <div className="chat-input-actions-left">
+                <button type="button" className="chat-tool-btn" onClick={() => imageInputRef.current?.click()} title="Send photo">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                </button>
                 <button type="button" className={`chat-tool-btn ${showEmoji ? 'active' : ''}`} onClick={() => { setShowEmoji(!showEmoji); setShowGif(false); setShowSticker(false); }} title="Emoji">
                   😊
                 </button>
@@ -621,7 +669,7 @@ export default function MessagesPanel() {
               <button
                 type="submit"
                 className="chat-send-btn"
-                disabled={!input.trim() || sending || (!isSelf && !user?.avatar)}
+                disabled={(!input.trim() && !imagePreview) || sending || (!isSelf && !user?.avatar)}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13" />

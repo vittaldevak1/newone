@@ -58,7 +58,14 @@ const tripSchema = new mongoose.Schema(
       type: String,
       enum: ["active", "completed", "cancelled"],
       default: "active"
-    }
+    },
+
+    itinerary: [{
+      day: { type: Number, required: true },
+      title: { type: String, trim: true },
+      activities: [{ type: String, trim: true }],
+      notes: { type: String, default: "" },
+    }],
   },
   {
     timestamps: true

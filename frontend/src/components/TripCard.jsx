@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { tripApi } from '../services/api';
 import TripEditModal from './TripEditModal';
+import ItineraryPlanner from './ItineraryPlanner';
 
 const ACTIVITY_ICONS = {
   'Photography': '📸', 'Hiking': '🥾', 'Food & Dining': '🍜', 'Beach': '🏖️',
@@ -13,6 +14,7 @@ const ACTIVITY_ICONS = {
 export default function TripCard({ trip, onDelete, onTripUpdated }) {
   const [deleting, setDeleting] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [showItinerary, setShowItinerary] = useState(false);
 
   const isImmediate = trip.tripType === 'immediate';
 
@@ -121,6 +123,9 @@ export default function TripCard({ trip, onDelete, onTripUpdated }) {
           {trip.lookingFor === 'local-guide' && '🧭 Looking for a local guide'}
           {trip.lookingFor === 'any' && '🌍 Open to anyone'}
         </span>
+        <button className="trip-itinerary-btn" onClick={() => setShowItinerary(true)}>
+          {trip.itinerary?.length ? `📋 Itinerary (${trip.itinerary.length} day${trip.itinerary.length > 1 ? 's' : ''})` : '📋 Plan Itinerary'}
+        </button>
       </div>
 
       {showEdit && (
@@ -130,6 +135,19 @@ export default function TripCard({ trip, onDelete, onTripUpdated }) {
           onTripUpdated={(updated) => {
             Object.assign(trip, updated);
             onTripUpdated?.(updated);
+          }}
+        />
+      )}
+
+      {showItinerary && (
+        <ItineraryPlanner
+          trip={trip}
+          onClose={() => setShowItinerary(false)}
+          onSave={async (itinerary) => {
+            const res = await tripApi.update(trip._id, { itinerary });
+            Object.assign(trip, res.data);
+            onTripUpdated?.(res.data);
+            setShowItinerary(false);
           }}
         />
       )}
