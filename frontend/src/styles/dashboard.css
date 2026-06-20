@@ -2,6 +2,7 @@
 .dash-layout {
   width: 100%;
   height: 100vh;
+  height: 100dvh;
   display: flex;
   background: var(--cream);
   overflow: hidden;
@@ -629,6 +630,9 @@
 
   .dash-main {
     height: calc(100vh - 56px);
+    height: calc(100dvh - 56px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .dash-grid {

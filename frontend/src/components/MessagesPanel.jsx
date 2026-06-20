@@ -29,10 +29,17 @@ export default function MessagesPanel() {
   const [otherTyping, setOtherTyping] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
   const [lastMsgMap, setLastMsgMap] = useState({});
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const messagesEnd = useRef(null);
   const inputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const prevMatchId = useRef(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const isSelf = activeConvo?._id === 'self';
 
@@ -354,10 +361,20 @@ export default function MessagesPanel() {
     );
   }
 
+  const goBack = () => {
+    setActiveConvo(null);
+    setMessages([]);
+    setOtherTyping(false);
+    if (prevMatchId.current) {
+      socket?.emit('leave-match', { matchId: prevMatchId.current });
+      prevMatchId.current = null;
+    }
+  };
+
   return (
     <div className="chat-layout">
       {/* Conversations Sidebar */}
-      <div className="chat-sidebar">
+      <div className={`chat-sidebar ${isMobile && activeConvo ? 'hidden-mobile' : ''}`}>
         <div className="chat-sidebar-header">
           <h3 className="chat-sidebar-title">Messages</h3>
         </div>
@@ -448,7 +465,7 @@ export default function MessagesPanel() {
       </div>
 
       {/* Chat Area */}
-      <div className="chat-main">
+      <div className={`chat-main ${isMobile && !activeConvo ? 'hidden-mobile' : ''}`}>
         {!activeConvo ? (
           <div className="chat-no-active">
             <div className="chat-no-active-icon">💬</div>
@@ -459,6 +476,11 @@ export default function MessagesPanel() {
           <>
             {/* Chat Header */}
             <div className="chat-header">
+              <button className="chat-back-btn" onClick={goBack} aria-label="Back to conversations">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6" />
+                </svg>
+              </button>
               <div className="chat-header-avatar" style={{ position: 'relative' }}>
                 {isSelf ? (
                   <span>{getInitials(user.name)}</span>

@@ -6,9 +6,33 @@ margin: 0;
 padding: 0;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
 body{
 min-height:100vh;
+min-height: 100dvh;
 font-family: 'Inter', sans-serif;
 -webkit-font-smoothing: antialiased;
 -moz-osx-font-smoothing: grayscale;
+overscroll-behavior: none;
+}
+
+input, textarea, button, select {
+  font-family: inherit;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input:focus, textarea:focus, button:focus {
+  outline: none;
+}
+
+/* Safe area padding for notched devices */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
