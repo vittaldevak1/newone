@@ -1,4 +1,5 @@
 const express = require("express");
+const http = require("http");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const authRoutes = require("./routes/authRoutes");
@@ -6,10 +7,18 @@ const tripRoutes = require("./routes/tripRoutes");
 const matchRoutes = require("./routes/matchRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
+const { initSocket } = require("./socket");
 
 require("dotenv").config();
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = initSocket(server);
+
+// Make io accessible in routes
+app.locals.io = io;
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -53,8 +62,14 @@ app.get("/", (req, res) => {
   res.send("Server running ");
 });
 
+// Online users endpoint
+app.get("/api/online", (req, res) => {
+  const { getOnlineUsers } = require("./socket");
+  res.json({ onlineUsers: Array.from(getOnlineUsers()) });
+});
+
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

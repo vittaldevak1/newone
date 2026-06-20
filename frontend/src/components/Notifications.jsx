@@ -1,22 +1,89 @@
 import { useState, useEffect, useContext, useRef } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { matchApi, messageApi } from '../services/api';
 
 export default function Notifications({ onNavigate }) {
   const { user } = useContext(AuthContext);
+  const { socket } = useSocket();
   const myId = user.id || user._id;
   const [notifications, setNotifications] = useState([]);
   const [open, setOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const prevMatchCount = useRef(0);
-  const prevUnreadCount = useRef(0);
   const dropdownRef = useRef(null);
 
+  // Initial fetch
   useEffect(() => {
-    checkNotifications();
-    const interval = setInterval(checkNotifications, 15000);
-    return () => clearInterval(interval);
+    const fetchInitial = async () => {
+      try {
+        const unread = await messageApi.getUnreadCount();
+        setUnreadCount(unread.unreadCount || 0);
+      } catch (err) {
+        // silently fail
+      }
+    };
+    fetchInitial();
   }, []);
+
+  // Socket listeners for real-time notifications
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMatch = ({ match }) => {
+      const other = match.user1._id === myId ? match.user2 : match.user1;
+      setNotifications((prev) => [{
+        id: `match-${match._id}`,
+        type: 'match',
+        text: `${other.name} wants to connect with you!`,
+        time: match.createdAt,
+        read: false,
+      }, ...prev].slice(0, 20));
+    };
+
+    const handleMatchAccepted = ({ match }) => {
+      const other = match.user1._id === myId ? match.user2 : match.user1;
+      setNotifications((prev) => [{
+        id: `accepted-${match._id}`,
+        type: 'match',
+        text: `${other.name} accepted your connection!`,
+        time: new Date().toISOString(),
+        read: false,
+      }, ...prev].slice(0, 20));
+    };
+
+    const handleMatchDeclined = ({ matchId }) => {
+      setNotifications((prev) => [{
+        id: `declined-${matchId}`,
+        type: 'match',
+        text: 'A connection request was removed',
+        time: new Date().toISOString(),
+        read: false,
+      }, ...prev].slice(0, 20));
+    };
+
+    const handleMessageReceived = () => {
+      setUnreadCount((prev) => prev + 1);
+      setNotifications((prev) => [{
+        id: `msg-${Date.now()}`,
+        type: 'message',
+        text: `You have a new message`,
+        time: new Date().toISOString(),
+        read: false,
+      }, ...prev].slice(0, 20));
+    };
+
+    socket.on('match:new', handleNewMatch);
+    socket.on('match:accepted', handleMatchAccepted);
+    socket.on('match:declined', handleMatchDeclined);
+    socket.on('message:receive', handleMessageReceived);
+
+    return () => {
+      socket.off('match:new', handleNewMatch);
+      socket.off('match:accepted', handleMatchAccepted);
+      socket.off('match:declined', handleMatchDeclined);
+      socket.off('message:receive', handleMessageReceived);
+    };
+  }, [socket, myId]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -27,61 +94,6 @@ export default function Notifications({ onNavigate }) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const checkNotifications = async () => {
-    try {
-      const [matches, unread] = await Promise.all([
-        matchApi.getMy(),
-        messageApi.getUnreadCount(),
-      ]);
-
-      const newNotifs = [];
-
-      // Check for new pending requests (someone connected with me)
-      const pendingForMe = matches.filter(
-        (m) => m.status === 'pending' && m.user2._id === myId
-      );
-      if (prevMatchCount.current > 0 && pendingForMe.length > prevMatchCount.current) {
-        const diff = pendingForMe.length - prevMatchCount.current;
-        for (let i = 0; i < diff; i++) {
-          const m = pendingForMe[i];
-          if (m) {
-            const other = m.user1._id === myId ? m.user2 : m.user1;
-            newNotifs.push({
-              id: `match-${m._id}`,
-              type: 'match',
-              text: `${other.name} wants to connect with you!`,
-              time: m.createdAt,
-              read: false,
-            });
-          }
-        }
-      }
-      prevMatchCount.current = pendingForMe.length;
-
-      // Check for unread messages
-      const currentUnread = unread.unreadCount || 0;
-      if (prevUnreadCount.current > 0 && currentUnread > prevUnreadCount.current) {
-        const diff = currentUnread - prevUnreadCount.current;
-        newNotifs.push({
-          id: `msg-${Date.now()}`,
-          type: 'message',
-          text: `You have ${diff} new message${diff > 1 ? 's' : ''}`,
-          time: new Date().toISOString(),
-          read: false,
-        });
-      }
-      prevUnreadCount.current = currentUnread;
-
-      setUnreadCount(currentUnread);
-
-      if (newNotifs.length > 0) {
-        setNotifications((prev) => [...newNotifs, ...prev].slice(0, 20));
-      }
-    } catch (err) {
-      // silently fail
-    }
-  };
 
   const markAllRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
@@ -105,15 +117,17 @@ export default function Notifications({ onNavigate }) {
           <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
           <path d="M13.73 21a2 2 0 0 1-3.46 0" />
         </svg>
-        {totalUnread > 0 && <span className="notif-badge">{totalUnread}</span>}
+        {(totalUnread > 0 || unreadCount > 0) && (
+          <span className="notif-badge">{totalUnread || unreadCount}</span>
+        )}
       </button>
 
       {open && (
         <div className="notif-dropdown">
           <div className="notif-dropdown-header">
             <h3>Notifications</h3>
-            {totalUnread > 0 && (
-              <button className="notif-mark-read" onClick={markAllRead}>Mark all read</button>
+            {(totalUnread > 0 || unreadCount > 0) && (
+              <button className="notif-mark-read" onClick={() => { markAllRead(); setUnreadCount(0); }}>Mark all read</button>
             )}
           </div>
           <div className="notif-list">

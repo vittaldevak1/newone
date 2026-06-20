@@ -38,6 +38,15 @@ router.post("/", protect, requirePhoto, async (req, res) => {
 
     const populated = await Message.findById(message._id).populate("sender", "name avatar");
 
+    // Emit via socket
+    const io = req.app.locals.io;
+    if (io) {
+      io.to(`match:${matchId}`).emit("message:receive", {
+        message: populated,
+        matchId,
+      });
+    }
+
     res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import ThemeProvider from "./context/ThemeContext";
 import { AuthProvider } from "./context/AuthContext";
+import { SocketProvider } from "./context/SocketContext";
 import './index.css'
 
 import App from './App.jsx'
@@ -18,7 +19,11 @@ createRoot(document.getElementById("root")).render(
 
         <AuthProvider>
 
-          <App />
+          <SocketProvider>
+
+            <App />
+
+          </SocketProvider>
 
         </AuthProvider>
 

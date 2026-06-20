@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { matchApi, messageApi } from '../services/api';
 import EmojiPicker from './EmojiPicker';
 import GifPicker from './GifPicker';
@@ -11,6 +12,7 @@ const SELF_CONVO = { _id: 'self', type: 'self' };
 
 export default function MessagesPanel() {
   const { user } = useContext(AuthContext);
+  const { socket, isUserOnline } = useSocket();
   const myId = user.id || user._id;
 
   const [conversations, setConversations] = useState([]);
@@ -27,9 +29,8 @@ export default function MessagesPanel() {
   const [otherTyping, setOtherTyping] = useState(false);
   const messagesEnd = useRef(null);
   const inputRef = useRef(null);
-  const pollRef = useRef(null);
-  const typingPollRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const prevMatchId = useRef(null);
 
   const isSelf = activeConvo?._id === 'self';
 
@@ -47,12 +48,13 @@ export default function MessagesPanel() {
     fetchConversations();
   }, []);
 
+  // Fetch messages when conversation opens (initial load only)
   useEffect(() => {
     if (!activeConvo || isSelf) return;
 
     const fetchMessages = async () => {
       try {
-        const data = await messageApi.getForMatch(activeConvo._id);
+        const data = messageApi.getForMatch ? await messageApi.getForMatch(activeConvo._id) : [];
         setMessages(data);
       } catch (err) {
         console.error(err);
@@ -60,11 +62,9 @@ export default function MessagesPanel() {
     };
 
     fetchMessages();
-    pollRef.current = setInterval(fetchMessages, 3000);
-    return () => clearInterval(pollRef.current);
-  }, [activeConvo]);
+  }, [activeConvo, isSelf]);
 
-  // Self-chat messages
+  // Self-chat messages (initial load)
   useEffect(() => {
     if (!isSelf) return;
     const fetchMessages = async () => {
@@ -76,32 +76,63 @@ export default function MessagesPanel() {
       }
     };
     fetchMessages();
-    pollRef.current = setInterval(fetchMessages, 3000);
-    return () => clearInterval(pollRef.current);
   }, [activeConvo, isSelf]);
 
-  // Typing indicator polling
+  // Socket: join/leave match rooms, listen for messages & typing
   useEffect(() => {
+    if (!socket) return;
+
+    // Leave previous match room
+    if (prevMatchId.current && !isSelf) {
+      socket.emit('leave-match', { matchId: prevMatchId.current });
+    }
+
     if (!activeConvo || isSelf) {
-      setOtherTyping(false);
+      prevMatchId.current = null;
       return;
     }
 
-    const otherUser = getOtherUser(activeConvo);
-    if (!otherUser) return;
+    const matchId = activeConvo._id;
+    prevMatchId.current = matchId;
 
-    const checkTyping = async () => {
-      try {
-        const data = await messageApi.getTyping(activeConvo._id, otherUser._id);
-        setOtherTyping(data.isTyping);
-      } catch (err) {
-        // silently fail
+    // Join match room
+    socket.emit('join-match', { matchId });
+
+    // Listen for new messages in this match
+    const handleMessage = ({ message, matchId: msgMatchId }) => {
+      if (msgMatchId === matchId) {
+        setMessages((prev) => {
+          // Avoid duplicates
+          if (prev.some((m) => m._id === message._id)) return prev;
+          return [...prev, message];
+        });
       }
     };
 
-    typingPollRef.current = setInterval(checkTyping, 3000);
-    return () => clearInterval(typingPollRef.current);
-  }, [activeConvo, isSelf]);
+    // Listen for typing
+    const handleTypingStart = ({ matchId: typingMatchId, userId: typingUserId }) => {
+      if (typingMatchId === matchId && typingUserId !== myId) {
+        setOtherTyping(true);
+      }
+    };
+
+    const handleTypingStop = ({ matchId: typingMatchId, userId: typingUserId }) => {
+      if (typingMatchId === matchId && typingUserId !== myId) {
+        setOtherTyping(false);
+      }
+    };
+
+    socket.on('message:receive', handleMessage);
+    socket.on('typing:start', handleTypingStart);
+    socket.on('typing:stop', handleTypingStop);
+
+    return () => {
+      socket.off('message:receive', handleMessage);
+      socket.off('typing:start', handleTypingStart);
+      socket.off('typing:stop', handleTypingStop);
+      socket.emit('leave-match', { matchId });
+    };
+  }, [activeConvo, socket, isSelf, myId]);
 
   useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: 'smooth' });
@@ -122,10 +153,17 @@ export default function MessagesPanel() {
 
     try {
       setSending(true);
-      const msg = isSelf
-        ? await messageApi.sendSelf(content.trim())
-        : await messageApi.send(activeConvo._id, content.trim());
-      setMessages(prev => [...prev, msg]);
+
+      if (isSelf) {
+        const msg = await messageApi.sendSelf(content.trim());
+        setMessages((prev) => [...prev, msg]);
+      } else if (socket) {
+        // Send via socket
+        socket.emit('message:send', { matchId: activeConvo._id, content: content.trim() });
+        // Stop typing indicator
+        socket.emit('typing:stop', { matchId: activeConvo._id });
+      }
+
       setInput('');
       setShowEmoji(false);
       setShowGif(false);
@@ -140,9 +178,15 @@ export default function MessagesPanel() {
 
   const handleInputChange = (e) => {
     setInput(e.target.value);
-    // Send typing indicator
-    if (!isSelf && activeConvo) {
-      messageApi.sendTyping(activeConvo._id).catch(() => {});
+    // Send typing indicator via socket
+    if (!isSelf && activeConvo && socket) {
+      socket.emit('typing:start', { matchId: activeConvo._id });
+
+      // Auto-stop typing after 3 seconds of inactivity
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('typing:stop', { matchId: activeConvo._id });
+      }, 3000);
     }
   };
 
@@ -192,6 +236,7 @@ export default function MessagesPanel() {
     setShowEmoji(false);
     setShowGif(false);
     setShowSticker(false);
+    setOtherTyping(false);
   };
 
   const openConvo = (match) => {
@@ -201,6 +246,7 @@ export default function MessagesPanel() {
     setShowEmoji(false);
     setShowGif(false);
     setShowSticker(false);
+    setOtherTyping(false);
   };
 
   const renderMessage = (msg, i) => {
@@ -276,17 +322,30 @@ export default function MessagesPanel() {
             const other = getOtherUser(match);
             if (!other) return null;
             const isActive = activeConvo?._id === match._id;
+            const online = isUserOnline(other._id);
             return (
               <button
                 key={match._id}
                 className={`chat-convo-item ${isActive ? 'active' : ''}`}
                 onClick={() => openConvo(match)}
               >
-                <div className="chat-convo-avatar">
+                <div className="chat-convo-avatar" style={{ position: 'relative' }}>
                   {other.avatar ? (
                     <img src={other.avatar} alt={other.name} />
                   ) : (
                     <span>{getInitials(other.name)}</span>
+                  )}
+                  {online && (
+                    <span style={{
+                      position: 'absolute',
+                      bottom: '2px',
+                      right: '2px',
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '50%',
+                      background: '#22c55e',
+                      border: '2px solid var(--card-bg)',
+                    }} />
                   )}
                 </div>
                 <div className="chat-convo-info">
@@ -317,7 +376,7 @@ export default function MessagesPanel() {
           <>
             {/* Chat Header */}
             <div className="chat-header">
-              <div className="chat-header-avatar">
+              <div className="chat-header-avatar" style={{ position: 'relative' }}>
                 {isSelf ? (
                   <span>{getInitials(user.name)}</span>
                 ) : otherActive?.avatar ? (
@@ -325,13 +384,25 @@ export default function MessagesPanel() {
                 ) : (
                   <span>{getInitials(otherActive?.name)}</span>
                 )}
+                {!isSelf && otherActive && isUserOnline(otherActive._id) && (
+                  <span style={{
+                    position: 'absolute',
+                    bottom: '2px',
+                    right: '2px',
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '50%',
+                    background: '#22c55e',
+                    border: '2px solid var(--card-bg)',
+                  }} />
+                )}
               </div>
               <div className="chat-header-info">
                 <span className="chat-header-name">
                   {isSelf ? 'Message Yourself' : otherActive?.name}
                 </span>
                 <span className="chat-header-status">
-                  {otherTyping ? 'typing...' : isSelf ? 'Private notes' : 'Connected'}
+                  {otherTyping ? 'typing...' : isSelf ? 'Private notes' : (otherActive && isUserOnline(otherActive._id)) ? 'Online' : 'Connected'}
                 </span>
               </div>
               {!isSelf && (

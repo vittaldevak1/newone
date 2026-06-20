@@ -142,6 +142,12 @@ router.post("/connect", protect, requirePhoto, async (req, res) => {
       .populate("trip1")
       .populate("trip2");
 
+    // Emit match:new to target user
+    const io = req.app.locals.io;
+    if (io) {
+      io.to(`user:${targetUserId}`).emit("match:new", { match: populated });
+    }
+
     res.status(201).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -166,6 +172,13 @@ router.put("/:matchId/accept", protect, requirePhoto, async (req, res) => {
       .populate("trip1")
       .populate("trip2");
 
+    // Emit match:accepted to both users
+    const io = req.app.locals.io;
+    if (io) {
+      io.to(`user:${match.user1.toString()}`).emit("match:accepted", { match: populated });
+      io.to(`user:${match.user2.toString()}`).emit("match:accepted", { match: populated });
+    }
+
     res.status(200).json(populated);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -183,7 +196,18 @@ router.put("/:matchId/decline", protect, requirePhoto, async (req, res) => {
       return res.status(403).json({ message: "Not authorized" });
     }
 
+    const user1Id = match.user1.toString();
+    const user2Id = match.user2.toString();
+
     await Match.findByIdAndDelete(match._id);
+
+    // Emit match:declined to both users
+    const io = req.app.locals.io;
+    if (io) {
+      io.to(`user:${user1Id}`).emit("match:declined", { matchId: match._id });
+      io.to(`user:${user2Id}`).emit("match:declined", { matchId: match._id });
+    }
+
     res.status(200).json({ message: "Removed" });
   } catch (error) {
     res.status(500).json({ message: error.message });

@@ -77,14 +77,6 @@ export const messageApi = {
 
   getUnreadCount: () => request("/api/messages/unread/count"),
 
-  sendTyping: (matchId) =>
-    request("/api/messages/typing", {
-      method: "POST",
-      body: JSON.stringify({ matchId }),
-    }),
-
-  getTyping: (matchId, userId) => request(`/api/messages/typing/${matchId}/${userId}`),
-
   // Self-chat
   getSelfMessages: () => request("/api/messages/self/messages"),
   sendSelf: (content) =>
