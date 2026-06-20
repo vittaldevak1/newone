@@ -2,11 +2,13 @@ const express = require("express");
 const Review = require("../models/Review");
 const Match = require("../models/Match");
 const protect = require("../middleware/authMiddleware");
+const requirePhoto = require("../middleware/requirePhoto");
+const requirePhone = require("../middleware/requirePhone");
 
 const router = express.Router();
 
 // ================= CREATE REVIEW =================
-router.post("/", protect, async (req, res) => {
+router.post("/", protect, requirePhoto, requirePhone, async (req, res) => {
   try {
     const { revieweeId, tripId, rating, comment } = req.body;
 

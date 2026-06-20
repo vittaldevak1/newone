@@ -3,11 +3,13 @@ const Message = require("../models/Message");
 const Match = require("../models/Match");
 const User = require("../models/User");
 const protect = require("../middleware/authMiddleware");
+const requirePhoto = require("../middleware/requirePhoto");
+const requirePhone = require("../middleware/requirePhone");
 
 const router = express.Router();
 
 // ================= SEND MESSAGE =================
-router.post("/", protect, async (req, res) => {
+router.post("/", protect, requirePhoto, requirePhone, async (req, res) => {
   try {
     const { matchId, content } = req.body;
 

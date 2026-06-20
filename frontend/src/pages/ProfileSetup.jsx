@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
+import PhoneVerificationStep from '../components/PhoneVerificationStep';
 import '../styles/auth.css';
 
 const INTERESTS_OPTIONS = [
@@ -12,10 +13,10 @@ const INTERESTS_OPTIONS = [
 ];
 
 const LANGUAGES_OPTIONS = [
-  'English', 'Spanish', 'French', 'German', 'Italian',
-  'Portuguese', 'Mandarin', 'Japanese', 'Korean', 'Arabic',
-  'Hindi', 'Russian', 'Dutch', 'Swedish', 'Thai'
+  'Abkhaz','Afar','Afrikaans','Akan','Albanian','Amharic','Arabic','Aragonese','Armenian','Assamese','Avaric','Aymara','Azerbaijani','Bambara','Bashkir','Basque','Belarusian','Bengali','Bihari','Bislama','Bosnian','Breton','Bulgarian','Burmese','Catalan','Chechen','Chichewa','Chinese','Chuvash','Cornish','Corsican','Croatian','Czech','Danish','Divehi','Dutch','Dzongkha','English','Esperanto','Estonian','Ewe','Faroese','Fijian','Finnish','French','Frisian','Fulah','Georgian','German','Greek','Guarani','Gujarati','Haitian','Hausa','Hebrew','Herero','Hindi','Hiri Motu','Hungarian','Icelandic','Ido','Igbo','Indonesian','Interlingua','Interlingue','Inuktitut','Inupiaq','Irish','Italian','Japanese','Javanese','Kalaallisut','Kannada','Kanuri','Kashmiri','Kazakh','Khmer','Kikuyu','Kinyarwanda','Kirghiz','Komi','Kongo','Korean','Kurdish','Kwanyama','Lao','Latin','Latvian','Limburgish','Lingala','Lithuanian','Luba-Katanga','Luxembourgish','Macedonian','Malagasy','Malay','Malayalam','Maltese','Manx','Maori','Marathi','Marshallese','Mongolian','Navajo','Ndonga','Nepali','Norwegian','Occitan','Ojibwe','Oriya','Oromo','Ossetian','Pali','Panjabi','Pashto','Persian','Polish','Portuguese','Quechua','Romanian','Romansh','Rundi','Russian','Samoan','Sango','Sanskrit','Sardinian','Serbian','Shona','Sindhi','Sinhala','Slovak','Slovenian','Somali','Southern Ndebele','Spanish','Sundanese','Swahili','Swati','Swedish','Tagalog','Tahitian','Tajik','Tamil','Tatar','Telugu','Thai','Tibetan','Tigrinya','Tonga','Tsonga','Tswana','Turkish','Turkmen','Twi','Ukrainian','Urdu','Uyghur','Uzbek','Venda','Vietnamese','Volapük','Walloon','Welsh','Western Frisian','Wolof','Xhosa','Yoruba','Zulu',
 ];
+
+const LANGUAGES_SEARCH = LANGUAGES_OPTIONS.slice().sort();
 
 const COUNTRIES = [
   'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Argentina', 'Armenia',
@@ -86,7 +87,7 @@ export default function ProfileSetup() {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
-  const totalSteps = 5;
+  const totalSteps = 6;
 
   const filteredCountries = COUNTRIES.filter((c) =>
     c.toLowerCase().includes(natSearch.toLowerCase())
@@ -108,6 +109,9 @@ export default function ProfileSetup() {
     const handleClickOutside = (e) => {
       if (natRef.current && !natRef.current.contains(e.target)) {
         setNatOpen(false);
+      }
+      if (langRef.current && !langRef.current.contains(e.target)) {
+        setLangOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -172,8 +176,8 @@ export default function ProfileSetup() {
   };
 
   const handleNext = () => {
-    if (step === 1 && (!formData.age || !formData.nationality)) {
-      setError('Please fill in your age and nationality');
+    if (step === 1 && (!formData.avatar || !formData.age || !formData.nationality)) {
+      setError(!formData.avatar ? 'Please upload a profile photo' : 'Please fill in your age and nationality');
       return;
     }
     if (step === 2 && formData.languages.length === 0) {
@@ -182,6 +186,17 @@ export default function ProfileSetup() {
     }
     if (step === 3 && !formData.travelStyle) {
       setError('Please select your travel style');
+      return;
+    }
+    if (step === 4 && formData.interests.length === 0) {
+      setError('Please select at least one interest');
+      return;
+    }
+    if (step === 5) {
+      // Social links are optional, just proceed
+    }
+    if (step === 6 && !formData.phoneVerified) {
+      setError('Please verify your phone number to continue');
       return;
     }
     setError(null);
@@ -193,7 +208,16 @@ export default function ProfileSetup() {
     setStep((s) => Math.max(s - 1, 1));
   };
 
+  const [langSearch, setLangSearch] = useState('');
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef(null);
+
   const handleSubmit = async () => {
+    if (!formData.avatar) {
+      setError('Please upload a profile photo to continue');
+      return;
+    }
+
     if (formData.interests.length === 0) {
       setError('Please select at least one interest');
       return;
@@ -304,6 +328,7 @@ export default function ProfileSetup() {
             {step === 3 && 'Travel Style'}
             {step === 4 && 'Interests'}
             {step === 5 && 'Social Links'}
+            {step === 6 && 'Verify Phone'}
           </div>
           <div className="card-sub" style={{ marginBottom: '32px' }}>
             {step === 1 && 'Basic information'}
@@ -311,6 +336,7 @@ export default function ProfileSetup() {
             {step === 3 && 'How do you like to travel?'}
             {step === 4 && 'What do you enjoy?'}
             {step === 5 && 'How can people reach you?'}
+            {step === 6 && 'Verify your phone number'}
           </div>
 
           {error && (
@@ -377,8 +403,17 @@ export default function ProfileSetup() {
                   )}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--ink)', marginBottom: '4px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--ink)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {formData.avatar ? 'Change Photo' : 'Upload Profile Photo'}
+                    <span style={{
+                      fontSize: '10px',
+                      fontWeight: '700',
+                      color: '#ef4444',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      padding: '2px 8px',
+                      borderRadius: '6px',
+                      letterSpacing: '0.5px',
+                    }}>REQUIRED</span>
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--label-color)' }}>
                     Drag & drop or click to browse. JPG, PNG, max 2MB.
@@ -574,30 +609,135 @@ export default function ProfileSetup() {
           {/* Step 2: Languages */}
           {step === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {LANGUAGES_OPTIONS.map((lang) => (
-                  <button
-                    key={lang}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, languages: toggleArrayItem(formData.languages, lang) })}
-                    disabled={saving}
-                    style={{
-                      padding: '10px 18px',
-                      borderRadius: '24px',
-                      border: '2px solid',
-                      borderColor: formData.languages.includes(lang) ? 'var(--accent)' : 'var(--input-border)',
-                      background: formData.languages.includes(lang) ? 'var(--accent)' : 'var(--input-bg)',
-                      color: formData.languages.includes(lang) ? 'white' : 'var(--ink)',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
+              <div ref={langRef} style={{ position: 'relative' }}>
+                <div
+                  onClick={() => { setLangOpen(!langOpen); setLangSearch(''); }}
+                  style={{
+                    width: '100%',
+                    minHeight: '50px',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    border: '1.5px solid',
+                    borderColor: langOpen ? 'var(--accent)' : 'var(--input-border)',
+                    background: 'var(--input-bg)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '6px',
+                    cursor: 'pointer',
+                    boxShadow: langOpen ? '0 0 0 3px rgba(108, 92, 231, 0.1)' : 'none',
+                    transition: 'border-color 0.25s ease, box-shadow 0.25s ease',
+                  }}
+                >
+                  {formData.languages.length > 0 ? (
+                    formData.languages.map((l) => (
+                      <span key={l} style={{
+                        padding: '4px 10px',
+                        borderRadius: '16px',
+                        background: 'var(--accent)',
+                        color: 'white',
+                        fontSize: '12px',
+                        fontWeight: '600',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}>
+                        {l}
+                        <span
+                          onClick={(e) => { e.stopPropagation(); setFormData({ ...formData, languages: formData.languages.filter(x => x !== l) }); }}
+                          style={{ cursor: 'pointer', fontSize: '14px', lineHeight: 1 }}
+                        >&times;</span>
+                      </span>
+                    ))
+                  ) : (
+                    <span style={{ color: 'var(--label-color)', fontSize: '14px' }}>Select languages you speak</span>
+                  )}
+                  <svg
+                    width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--label-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    style={{ marginLeft: 'auto', transform: langOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', flexShrink: 0 }}
                   >
-                    {lang}
-                  </button>
-                ))}
+                    <path d="M6 9l6 6 6-6" />
+                  </svg>
+                </div>
+                {langOpen && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '56px',
+                    left: 0,
+                    right: 0,
+                    background: 'var(--card-bg)',
+                    border: '1px solid var(--input-border)',
+                    borderRadius: '12px',
+                    boxShadow: '0 12px 32px var(--shadow-tint)',
+                    zIndex: 100,
+                    maxHeight: '280px',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}>
+                    <div style={{ padding: '8px', borderBottom: '1px solid var(--input-border)' }}>
+                      <input
+                        type="text"
+                        placeholder="Search languages..."
+                        value={langSearch}
+                        onChange={(e) => setLangSearch(e.target.value)}
+                        autoFocus
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--input-border)',
+                          background: 'var(--input-bg)',
+                          color: 'var(--ink)',
+                          fontSize: '13px',
+                          outline: 'none',
+                        }}
+                      />
+                    </div>
+                    <div style={{ overflowY: 'auto', maxHeight: '220px' }}>
+                      {LANGUAGES_SEARCH
+                        .filter((l) => l.toLowerCase().includes(langSearch.toLowerCase()))
+                        .map((lang) => (
+                          <div
+                            key={lang}
+                            onClick={() => {
+                              const langs = formData.languages.includes(lang)
+                                ? formData.languages.filter((l) => l !== lang)
+                                : [...formData.languages, lang];
+                              setFormData({ ...formData, languages: langs });
+                            }}
+                            style={{
+                              padding: '10px 14px',
+                              cursor: 'pointer',
+                              fontSize: '14px',
+                              color: formData.languages.includes(lang) ? 'var(--accent)' : 'var(--ink)',
+                              background: formData.languages.includes(lang) ? 'rgba(108, 92, 231, 0.08)' : 'transparent',
+                              fontWeight: formData.languages.includes(lang) ? '600' : '400',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              transition: 'background 0.15s',
+                            }}
+                            onMouseEnter={(e) => { if (!formData.languages.includes(lang)) e.currentTarget.style.background = 'var(--input-bg)'; }}
+                            onMouseLeave={(e) => { if (!formData.languages.includes(lang)) e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            {formData.languages.includes(lang) && (
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12" />
+                              </svg>
+                            )}
+                            {lang}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
+              {formData.languages.length > 0 && (
+                <div style={{ fontSize: '13px', color: 'var(--label-color)' }}>
+                  {formData.languages.length} language{formData.languages.length > 1 ? 's' : ''} selected
+                </div>
+              )}
             </div>
           )}
 
@@ -676,7 +816,7 @@ export default function ProfileSetup() {
                 { key: 'tiktok', label: 'TikTok', icon: '🎵', placeholder: '@username' },
                 { key: 'youtube', label: 'YouTube', icon: '📺', placeholder: 'Channel URL' },
               ].map((item) => (
-                <div key={item.key} className="field" style={{ marginBottom: 0 }}>
+                <div key={item.key} style={{ position: 'relative', marginBottom: 0 }}>
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -691,7 +831,7 @@ export default function ProfileSetup() {
                     <span style={{ fontSize: '18px', flexShrink: 0 }}>{item.icon}</span>
                     <input
                       type="text"
-                      placeholder=" "
+                      placeholder={item.label}
                       value={formData.social[item.key]}
                       onChange={(e) => setFormData({
                         ...formData,
@@ -709,23 +849,28 @@ export default function ProfileSetup() {
                         padding: 0,
                       }}
                     />
-                    <label style={{
-                      position: 'absolute',
-                      left: '48px',
-                      fontSize: '11px',
-                      color: 'var(--teal-deep)',
-                      background: 'var(--card-bg)',
-                      padding: '0 4px',
-                      pointerEvents: 'none',
-                      transition: 'all 0.25s ease',
-                    }}>{item.label}</label>
                   </div>
+                  <label style={{
+                    position: 'absolute',
+                    left: '48px',
+                    top: '-8px',
+                    fontSize: '11px',
+                    color: 'var(--accent)',
+                    background: 'var(--card-bg)',
+                    padding: '0 4px',
+                    pointerEvents: 'none',
+                  }}>{item.label}</label>
                 </div>
               ))}
               <div style={{ fontSize: '12px', color: 'var(--label-color)', textAlign: 'center', marginTop: '4px' }}>
                 All fields are optional. Add what you're comfortable sharing.
               </div>
             </div>
+          )}
+
+          {/* Step 6: Phone Verification */}
+          {step === 6 && (
+            <PhoneVerificationStep formData={formData} setFormData={setFormData} />
           )}
 
           {/* Navigation Buttons */}
@@ -776,21 +921,6 @@ export default function ProfileSetup() {
               </button>
             )}
           </div>
-
-          {step < totalSteps && (
-            <div
-              style={{
-                textAlign: 'center',
-                marginTop: '16px',
-                fontSize: '13px',
-                color: 'var(--ink-soft)',
-                cursor: 'pointer',
-              }}
-              onClick={() => navigate('/dashboard')}
-            >
-              Skip for now
-            </div>
-          )}
         </div>
       </div>
     </div>

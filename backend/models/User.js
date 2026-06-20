@@ -88,6 +88,18 @@ const userSchema = new mongoose.Schema(
         ref: "User"
     }],
 
+    phone: {
+        type: String,
+        default: "",
+        unique: true,
+        sparse: true
+    },
+
+    phoneVerified: {
+        type: Boolean,
+        default: false
+    },
+
     typing: {
         matchId: { type: mongoose.Schema.Types.ObjectId, default: null },
         lastTyped: { type: Date, default: null }

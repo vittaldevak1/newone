@@ -118,6 +118,7 @@ export default function MessagesPanel() {
 
   const handleSend = async (content) => {
     if (!content.trim() || !activeConvo || sending) return;
+    if (!user?.avatar) return;
 
     try {
       setSending(true);
@@ -437,13 +438,14 @@ export default function MessagesPanel() {
                 value={input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder={isSelf ? "Write a note to yourself..." : "Type a message..."}
+                placeholder={!user?.avatar ? "Upload a photo to chat..." : isSelf ? "Write a note to yourself..." : "Type a message..."}
                 maxLength={2000}
+                disabled={!isSelf && !user?.avatar}
               />
               <button
                 type="submit"
                 className="chat-send-btn"
-                disabled={!input.trim() || sending}
+                disabled={!input.trim() || sending || (!isSelf && !user?.avatar)}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13" />

@@ -3,3 +3,8 @@ node_modules/
 dist/
 .DS_Store
 *.log
+.firebase/
+.agents/
+.firebaserc
+firebase.json
+skills-lock.json

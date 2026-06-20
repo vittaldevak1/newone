@@ -275,6 +275,32 @@ router.delete("/profile", protect, async (req, res) => {
     }
 });
 
+// ================= VERIFY PHONE =================
+router.post("/verify-phone", protect, async (req, res) => {
+    try {
+        const { phone } = req.body;
+        if (!phone) {
+            return res.status(400).json({ message: "Phone number is required" });
+        }
+        // Check if phone is already used by another user
+        const existingUser = await User.findOne({ phone, _id: { $ne: req.user.id } });
+        if (existingUser) {
+            return res.status(400).json({ message: "This phone number is already registered with another account" });
+        }
+        const user = await User.findByIdAndUpdate(
+            req.user.id,
+            { phone, phoneVerified: true },
+            { new: true }
+        ).select("-password");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        res.status(200).json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // ================= BLOCK / UNBLOCK USER =================
 router.post("/block", protect, async (req, res) => {
     try {

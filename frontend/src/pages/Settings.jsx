@@ -1,4 +1,4 @@
-import { useContext, useState, useRef } from 'react';
+import { useContext, useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
@@ -25,12 +25,114 @@ const INTEREST_OPTIONS = [
 ];
 
 const LANGUAGES = [
-  'English', 'Hindi', 'Spanish', 'French', 'German', 'Italian', 'Portuguese',
-  'Japanese', 'Korean', 'Mandarin', 'Cantonese', 'Thai', 'Vietnamese',
-  'Arabic', 'Russian', 'Dutch', 'Turkish', 'Greek', 'Swedish', 'Norwegian',
-  'Danish', 'Finnish', 'Polish', 'Czech', 'Hungarian', 'Romanian',
-  'Malay', 'Indonesian', 'Tagalog', 'Tamil', 'Telugu', 'Bengali',
+  'Abkhaz','Afar','Afrikaans','Akan','Albanian','Amharic','Arabic','Aragonese','Armenian','Assamese','Avaric','Aymara','Azerbaijani','Bambara','Bashkir','Basque','Belarusian','Bengali','Bihari','Bislama','Bosnian','Breton','Bulgarian','Burmese','Catalan','Chechen','Chichewa','Chinese','Chuvash','Cornish','Corsican','Croatian','Czech','Danish','Divehi','Dutch','Dzongkha','English','Esperanto','Estonian','Ewe','Faroese','Fijian','Finnish','French','Frisian','Fulah','Georgian','German','Greek','Guarani','Gujarati','Haitian','Hausa','Hebrew','Herero','Hindi','Hiri Motu','Hungarian','Icelandic','Ido','Igbo','Indonesian','Interlingua','Interlingue','Inuktitut','Inupiaq','Irish','Italian','Japanese','Javanese','Kalaallisut','Kannada','Kanuri','Kashmiri','Kazakh','Khmer','Kikuyu','Kinyarwanda','Kirghiz','Komi','Kongo','Korean','Kurdish','Kwanyama','Lao','Latin','Latvian','Limburgish','Lingala','Lithuanian','Luba-Katanga','Luxembourgish','Macedonian','Malagasy','Malay','Malayalam','Maltese','Manx','Maori','Marathi','Marshallese','Mongolian','Navajo','Ndonga','Nepali','Norwegian','Occitan','Ojibwe','Oriya','Oromo','Ossetian','Pali','Panjabi','Pashto','Persian','Polish','Portuguese','Quechua','Romanian','Romansh','Rundi','Russian','Samoan','Sango','Sanskrit','Sardinian','Serbian','Shona','Sindhi','Sinhala','Slovak','Slovenian','Somali','Southern Ndebele','Spanish','Sundanese','Swahili','Swati','Swedish','Tagalog','Tahitian','Tajik','Tamil','Tatar','Telugu','Thai','Tibetan','Tigrinya','Tonga','Tsonga','Tswana','Turkish','Turkmen','Twi','Ukrainian','Urdu','Uyghur','Uzbek','Venda','Vietnamese','Volapük','Walloon','Welsh','Western Frisian','Wolof','Xhosa','Yoruba','Zulu',
+].slice().sort();
+
+const LANGUAGES_INITIALS = [
+  'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese',
+  'Japanese', 'Korean', 'Mandarin', 'Hindi', 'Arabic', 'Russian',
+  'Dutch', 'Thai', 'Vietnamese', 'Turkish', 'Greek', 'Swedish',
 ];
+
+function LangDropdown({ languages, setLanguages }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <div
+        onClick={() => { setOpen(!open); setSearch(''); }}
+        style={{
+          width: '100%',
+          minHeight: '44px',
+          padding: '10px 14px',
+          borderRadius: '12px',
+          border: '1.5px solid var(--input-border)',
+          background: 'var(--input-bg)',
+          display: 'flex',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '6px',
+          cursor: 'pointer',
+          transition: 'border-color 0.2s',
+        }}
+      >
+        {languages.length > 0 ? (
+          languages.map((l) => (
+            <span key={l} style={{
+              padding: '3px 10px',
+              borderRadius: '14px',
+              background: 'var(--accent)',
+              color: 'white',
+              fontSize: '12px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}>
+              {l}
+              <span
+                onClick={(e) => { e.stopPropagation(); setLanguages(languages.filter(x => x !== l)); }}
+                style={{ cursor: 'pointer', fontSize: '13px', lineHeight: 1 }}
+              >&times;</span>
+            </span>
+          ))
+        ) : (
+          <span style={{ color: 'var(--label-color)', fontSize: '13px' }}>Select languages</span>
+        )}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--label-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+          style={{ marginLeft: 'auto', transform: open ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', flexShrink: 0 }}>
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </div>
+      {open && (
+        <div style={{
+          position: 'absolute', top: '50px', left: 0, right: 0,
+          background: 'var(--card-bg)', border: '1px solid var(--input-border)',
+          borderRadius: '12px', boxShadow: '0 12px 32px var(--shadow-tint)',
+          zIndex: 100, maxHeight: '260px', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        }}>
+          <div style={{ padding: '8px', borderBottom: '1px solid var(--input-border)' }}>
+            <input type="text" placeholder="Search languages..." value={search} onChange={(e) => setSearch(e.target.value)} autoFocus
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--ink)', fontSize: '13px', outline: 'none' }} />
+          </div>
+          <div style={{ overflowY: 'auto', maxHeight: '200px' }}>
+            {LANGUAGES.filter((l) => l.toLowerCase().includes(search.toLowerCase())).map((lang) => (
+              <div key={lang}
+                onClick={() => {
+                  setLanguages(languages.includes(lang) ? languages.filter((l) => l !== lang) : [...languages, lang]);
+                }}
+                style={{
+                  padding: '9px 14px', cursor: 'pointer', fontSize: '13px',
+                  color: languages.includes(lang) ? 'var(--accent)' : 'var(--ink)',
+                  background: languages.includes(lang) ? 'rgba(108, 92, 231, 0.08)' : 'transparent',
+                  fontWeight: languages.includes(lang) ? '600' : '400',
+                  display: 'flex', alignItems: 'center', gap: '8px', transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => { if (!languages.includes(lang)) e.currentTarget.style.background = 'var(--input-bg)'; }}
+                onMouseLeave={(e) => { if (!languages.includes(lang)) e.currentTarget.style.background = 'transparent'; }}
+              >
+                {languages.includes(lang) && (
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                )}
+                {lang}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Settings() {
   const { user, updateProfile, logout } = useContext(AuthContext);
@@ -441,18 +543,7 @@ export default function Settings() {
               <div className="settings-field">
                 <label className="settings-label">Languages</label>
                 <p className="settings-hint">Languages you speak</p>
-                <div className="settings-chip-grid">
-                  {LANGUAGES.map((lang) => (
-                    <button
-                      key={lang}
-                      type="button"
-                      className={`settings-chip ${languages.includes(lang) ? 'selected' : ''}`}
-                      onClick={() => toggleLanguage(lang)}
-                    >
-                      {lang}
-                    </button>
-                  ))}
-                </div>
+                <LangDropdown languages={languages} setLanguages={setLanguages} />
               </div>
 
               <button className="settings-btn-primary" onClick={handleSavePreferences} disabled={saving}>{saving ? 'Saving...' : 'Save Preferences'}</button>

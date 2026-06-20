@@ -4,6 +4,8 @@ const User = require("../models/User");
 const Trip = require("../models/Trip");
 const { getCompatibilityScore } = require("../utils/matching");
 const protect = require("../middleware/authMiddleware");
+const requirePhoto = require("../middleware/requirePhoto");
+const requirePhone = require("../middleware/requirePhone");
 
 const router = express.Router();
 
@@ -97,7 +99,7 @@ router.get("/discover", protect, async (req, res) => {
 });
 
 // ================= CONNECT (send request) =================
-router.post("/connect", protect, async (req, res) => {
+router.post("/connect", protect, requirePhoto, requirePhone, async (req, res) => {
   try {
     const { targetUserId } = req.body;
 
@@ -148,7 +150,7 @@ router.post("/connect", protect, async (req, res) => {
 });
 
 // ================= ACCEPT =================
-router.put("/:matchId/accept", protect, async (req, res) => {
+router.put("/:matchId/accept", protect, requirePhoto, requirePhone, async (req, res) => {
   try {
     const match = await Match.findById(req.params.matchId);
     if (!match) return res.status(404).json({ message: "Not found" });
@@ -172,7 +174,7 @@ router.put("/:matchId/accept", protect, async (req, res) => {
 });
 
 // ================= DECLINE / CANCEL =================
-router.put("/:matchId/decline", protect, async (req, res) => {
+router.put("/:matchId/decline", protect, requirePhoto, requirePhone, async (req, res) => {
   try {
     const match = await Match.findById(req.params.matchId);
     if (!match) return res.status(404).json({ message: "Not found" });

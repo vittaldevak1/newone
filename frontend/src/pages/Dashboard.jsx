@@ -9,6 +9,8 @@ import Explore from '../components/Explore';
 import MessagesPanel from '../components/MessagesPanel';
 import ReviewsPanel from '../components/ReviewsPanel';
 import Notifications from '../components/Notifications';
+import PhotoRequiredBanner from '../components/PhotoRequiredBanner';
+import PhoneRequiredBanner from '../components/PhoneRequiredBanner';
 import '../styles/auth.css';
 import '../styles/dashboard.css';
 
@@ -252,6 +254,8 @@ export default function Dashboard() {
 
         {/* Content Area */}
         <div className="dash-content">
+          <PhotoRequiredBanner />
+          <PhoneRequiredBanner />
           {activeNav === 'dashboard' && (
             <>
               {/* Stats Row */}

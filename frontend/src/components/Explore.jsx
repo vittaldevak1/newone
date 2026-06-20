@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import { matchApi } from '../services/api';
+import { AuthContext } from '../context/AuthContext';
 import '../styles/dashboard.css';
 
 const PAGE_SIZE = 20;
@@ -20,6 +21,8 @@ const INTERESTS = [
 ];
 
 export default function Explore() {
+  const { user } = useContext(AuthContext);
+  const hasPhoto = !!user?.avatar;
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -241,8 +244,10 @@ export default function Explore() {
 
                 <button
                   className={`explore-connect-btn ${sentIds.has(u._id) ? 'sent' : ''}`}
-                  onClick={() => handleConnect(u._id)}
-                  disabled={sentIds.has(u._id) || sending === u._id}
+                  onClick={() => hasPhoto ? handleConnect(u._id) : null}
+                  disabled={!hasPhoto || sentIds.has(u._id) || sending === u._id}
+                  title={hasPhoto ? '' : 'Upload a photo first'}
+                  style={!hasPhoto ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                 >
                   {sending === u._id ? (
                     'Sending...'

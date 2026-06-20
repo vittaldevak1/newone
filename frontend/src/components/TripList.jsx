@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { tripApi } from '../services/api';
 import TripCard from './TripCard';
 import TripCalendar from './TripCalendar';
 import TripForm from './TripForm';
+import { AuthContext } from '../context/AuthContext';
 
 export default function TripList() {
+  const { user } = useContext(AuthContext);
+  const hasPhoto = !!user?.avatar;
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -95,7 +98,7 @@ export default function TripList() {
               Calendar
             </button>
           </div>
-          <button className="trip-create-btn" onClick={() => setShowForm(true)}>
+          <button className="trip-create-btn" onClick={() => hasPhoto ? setShowForm(true) : null} title={hasPhoto ? '' : 'Upload a photo first'} style={!hasPhoto ? { opacity: 0.5, cursor: 'not-allowed' } : {}}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
@@ -112,7 +115,7 @@ export default function TripList() {
               <div className="trip-empty-icon">✈️</div>
               <h3 className="trip-empty-title">No trips yet</h3>
               <p className="trip-empty-desc">Create your first trip to start finding travel companions!</p>
-              <button className="trip-empty-btn" onClick={() => setShowForm(true)}>
+              <button className="trip-empty-btn" onClick={() => hasPhoto ? setShowForm(true) : null} style={!hasPhoto ? { opacity: 0.5, cursor: 'not-allowed' } : {}}>
                 Create a Trip
               </button>
             </div>
