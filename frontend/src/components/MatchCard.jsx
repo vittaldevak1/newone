@@ -12,13 +12,23 @@ const TRAVEL_STYLES = {
 export default function MatchCard({ match, onAccept, onDecline }) {
   const { user } = useContext(AuthContext);
 
-  const myId = user.id || user._id;
-  const initiatedById = typeof match.initiatedBy === 'object'
-    ? (match.initiatedBy._id || match.initiatedBy.toString())
-    : match.initiatedBy;
+  if (!match || !user) return null;
 
-  const iSentIt = initiatedById === myId;
-  const otherUser = match.user1._id === myId ? match.user2 : match.user1;
+  const myId = user._id || user.id;
+
+  if (!match.user1 || !match.user2) return null;
+
+  const user1Id = match.user1._id || match.user1;
+  const user2Id = match.user2._id || match.user2;
+
+  const otherUser = user1Id.toString() === myId.toString() ? match.user2 : match.user1;
+
+  if (!otherUser || !otherUser.name) return null;
+
+  const initiatedById = match.initiatedBy?._id
+    || (typeof match.initiatedBy === 'string' ? match.initiatedBy : match.initiatedBy?.toString?.() || '');
+
+  const iSentIt = initiatedById && myId && initiatedById.toString() === myId.toString();
 
   const getInitials = (name) => {
     return name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';

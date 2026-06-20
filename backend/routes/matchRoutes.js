@@ -101,7 +101,6 @@ router.get("/discover", protect, async (req, res) => {
 router.post("/connect", protect, requirePhoto, async (req, res) => {
   try {
     const { targetUserId } = req.body;
-    console.log("CONNECT - from:", req.user.id, "to:", targetUserId);
 
     if (!targetUserId || targetUserId === req.user.id) {
       return res.status(400).json({ message: "Invalid target" });
@@ -194,7 +193,6 @@ router.put("/:matchId/decline", protect, requirePhoto, async (req, res) => {
 // ================= GET MY MATCHES =================
 router.get("/my", protect, async (req, res) => {
   try {
-    console.log("GET /my - user.id:", req.user.id);
     const matches = await Match.find({
       $or: [{ user1: req.user.id }, { user2: req.user.id }]
     })
@@ -204,20 +202,7 @@ router.get("/my", protect, async (req, res) => {
       .populate("trip2")
       .sort({ createdAt: -1 });
 
-    console.log("Found matches:", matches.length);
-
-    // Deduplicate
-    const seen = new Set();
-    const deduped = [];
-    for (const m of matches) {
-      const u1 = m.user1._id ? m.user1._id.toString() : m.user1.toString();
-      const u2 = m.user2._id ? m.user2._id.toString() : m.user2.toString();
-      const key = [u1, u2].sort().join('-');
-      if (!seen.has(key)) {
-        seen.add(key);
-        deduped.push(m);
-      }
-    }
+    const deduped = matches.filter(m => m.user1 && m.user2);
 
     res.status(200).json(deduped);
   } catch (error) {

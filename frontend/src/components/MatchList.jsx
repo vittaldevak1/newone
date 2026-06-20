@@ -15,9 +15,12 @@ export default function MatchList() {
   const fetchMatches = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await matchApi.getMy();
-      setMatches(data);
+      console.log("Matches data:", data);
+      setMatches(Array.isArray(data) ? data : []);
     } catch (err) {
+      console.error("Fetch matches error:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -91,6 +94,16 @@ export default function MatchList() {
           Connected ({connectedCount})
         </button>
       </div>
+
+      {error && (
+        <div style={{
+          padding: '12px 16px', borderRadius: '10px',
+          background: 'rgba(239, 68, 68, 0.08)', color: '#ef4444',
+          fontSize: '14px', textAlign: 'center', marginBottom: '16px',
+        }}>
+          {error}
+        </div>
+      )}
 
       {filteredMatches.length === 0 ? (
         <div className="match-empty">
