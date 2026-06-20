@@ -4415,3 +4415,77 @@ button.review-star:not(:disabled) {
   scrollbar-width: thin;
   scrollbar-color: var(--label-color) transparent;
 }
+
+/* ===== Settings Mobile ===== */
+@media (max-width: 768px) {
+  .settings-header {
+    padding: 16px 16px;
+    gap: 12px;
+  }
+
+  .settings-title {
+    font-size: 20px;
+  }
+
+  .settings-layout {
+    flex-direction: column;
+    padding: 0 12px;
+    gap: 0;
+    height: auto;
+    overflow: visible;
+    max-width: 100%;
+  }
+
+  .settings-sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 4px;
+    padding: 12px 0;
+    position: static;
+    -webkit-overflow-scrolling: touch;
+    border-bottom: 1px solid var(--divider-color);
+    margin-bottom: 16px;
+  }
+
+  .settings-nav-item {
+    flex: 0 0 auto;
+    padding: 8px 14px;
+    font-size: 13px;
+    border-radius: 20px;
+    white-space: nowrap;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+  }
+
+  .settings-nav-item.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  .settings-content {
+    overflow-y: visible;
+    padding: 0 0 24px;
+    width: 100%;
+  }
+
+  .settings-section {
+    padding: 20px 16px;
+    border-radius: 14px;
+  }
+
+  .settings-section-title {
+    font-size: 18px;
+  }
+
+  .settings-input,
+  .settings-textarea {
+    font-size: 16px;
+  }
+
+  .settings-btn-primary,
+  .settings-btn-danger {
+    width: 100%;
+  }
+}

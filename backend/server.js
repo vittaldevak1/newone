@@ -47,6 +47,13 @@ mongoose.connect(process.env.MONGO_URI)
       await Match.deleteMany({ _id: { $in: toDelete } });
       console.log(`Cleaned ${toDelete.length} duplicate matches`);
     }
+    // One-time: drop stale phone_1 unique index
+    try {
+      await mongoose.connection.db.collection('users').dropIndex('phone_1');
+      console.log("Dropped stale phone_1 index");
+    } catch (e) {
+      // index may not exist, that's fine
+    }
   })
   .catch((err) => console.log(err));
 
