@@ -9,7 +9,7 @@ const TRAVEL_STYLES = {
   'family-friendly': { icon: '👨‍👩‍👧‍👦', label: 'Family' },
 };
 
-export default function MatchCard({ match, onAccept, onDecline }) {
+export default function MatchCard({ match, onAccept, onDecline, onViewProfile }) {
   const { user } = useContext(AuthContext);
 
   if (!match || !user) return null;
@@ -43,7 +43,7 @@ export default function MatchCard({ match, onAccept, onDecline }) {
 
   return (
     <div className="match-card">
-      <div className="match-card-header">
+      <div className="match-card-header" onClick={() => onViewProfile?.(otherUser)} style={{ cursor: 'pointer' }}>
         <div className="match-card-avatar">
           {otherUser.avatar ? (
             <img src={otherUser.avatar} alt={otherUser.name} />

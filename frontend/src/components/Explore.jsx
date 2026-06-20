@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useContext } from 'react';
 import { matchApi } from '../services/api';
 import { AuthContext } from '../context/AuthContext';
+import ProfileModal from './ProfileModal';
 import '../styles/dashboard.css';
 
 const PAGE_SIZE = 20;
@@ -36,6 +37,7 @@ export default function Explore() {
   });
   const [search, setSearch] = useState('');
   const [sentIds, setSentIds] = useState(new Set());
+  const [viewingProfile, setViewingProfile] = useState(null);
   const sentinelRef = useRef(null);
 
   const fetchUsers = useCallback(async (pageNum, append = false) => {
@@ -194,7 +196,7 @@ export default function Explore() {
           <div className="explore-grid">
             {filtered.map(u => (
               <div key={u._id} className="explore-card">
-                <div className="explore-card-top">
+                <div className="explore-card-top" onClick={() => setViewingProfile(u)} style={{ cursor: 'pointer' }}>
                   <div className="explore-card-avatar">
                     {u.avatar ? (
                       <img src={u.avatar} alt={u.name} />
@@ -282,6 +284,10 @@ export default function Explore() {
             )}
           </div>
         </>
+      )}
+
+      {viewingProfile && (
+        <ProfileModal user={viewingProfile} onClose={() => setViewingProfile(null)} isOtherUser={true} />
       )}
     </div>
   );

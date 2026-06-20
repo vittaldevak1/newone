@@ -11,7 +11,7 @@ const TRAVEL_STYLES = {
   'family-friendly': { icon: '👨‍👩‍👧‍👦', label: 'Family' },
 };
 
-export default function ProfileModal({ user, onClose }) {
+export default function ProfileModal({ user, onClose, isOtherUser = false }) {
   const { theme, toggleTheme } = useContext(ThemeContext);
   const navigate = useNavigate();
   const travel = user?.travelStyle ? TRAVEL_STYLES[user.travelStyle] : null;
@@ -24,7 +24,7 @@ export default function ProfileModal({ user, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2 className="modal-title">Your Profile</h2>
+          <h2 className="modal-title">{isOtherUser ? user.name : 'Your Profile'}</h2>
           <button className="modal-close" onClick={onClose}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" />
@@ -101,12 +101,20 @@ export default function ProfileModal({ user, onClose }) {
         </div>
 
         <div className="modal-footer">
-          <button className="modal-btn-secondary" onClick={toggleTheme}>
-            {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
-          </button>
-          <button className="modal-btn-primary" onClick={() => { onClose(); navigate('/profile-setup'); }}>
-            Edit Profile
-          </button>
+          {isOtherUser ? (
+            <button className="modal-btn-primary" onClick={onClose} style={{ flex: 1 }}>
+              Close
+            </button>
+          ) : (
+            <>
+              <button className="modal-btn-secondary" onClick={toggleTheme}>
+                {theme === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+              </button>
+              <button className="modal-btn-primary" onClick={() => { onClose(); navigate('/profile-setup'); }}>
+                Edit Profile
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>

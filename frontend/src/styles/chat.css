@@ -630,10 +630,6 @@
     border-radius: 12px;
   }
 
-  .chat-main.hidden-mobile {
-    display: none;
-  }
-
   .chat-header {
     padding: 12px 12px 12px 8px;
   }

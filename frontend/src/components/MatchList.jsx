@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { matchApi } from '../services/api';
 import MatchCard from './MatchCard';
+import ProfileModal from './ProfileModal';
 
 export default function MatchList() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState(null);
+  const [viewingProfile, setViewingProfile] = useState(null);
 
   useEffect(() => {
     fetchMatches();
@@ -127,9 +129,13 @@ export default function MatchList() {
               match={match}
               onAccept={handleAccept}
               onDecline={handleDecline}
+              onViewProfile={setViewingProfile}
             />
           ))}
         </div>
+      )}
+      {viewingProfile && (
+        <ProfileModal user={viewingProfile} onClose={() => setViewingProfile(null)} isOtherUser={true} />
       )}
     </div>
   );
