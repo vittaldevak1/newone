@@ -2,7 +2,6 @@ import { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
-import PhoneVerificationStep from '../components/PhoneVerificationStep';
 import '../styles/auth.css';
 
 const INTERESTS_OPTIONS = [
@@ -87,7 +86,7 @@ export default function ProfileSetup() {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
-  const totalSteps = 6;
+  const totalSteps = 5;
 
   const filteredCountries = COUNTRIES.filter((c) =>
     c.toLowerCase().includes(natSearch.toLowerCase())
@@ -192,13 +191,6 @@ export default function ProfileSetup() {
       setError('Please select at least one interest');
       return;
     }
-    if (step === 5) {
-      // Social links are optional, just proceed
-    }
-    if (step === 6 && !formData.phoneVerified) {
-      setError('Please verify your phone number to continue');
-      return;
-    }
     setError(null);
     setStep((s) => Math.min(s + 1, totalSteps));
   };
@@ -236,6 +228,7 @@ export default function ProfileSetup() {
         bio: formData.bio,
         avatar: formData.avatar,
         social: formData.social,
+        phone: formData.phone ? `+91${formData.phone}` : '',
       });
       navigate('/dashboard');
     } catch (err) {
@@ -328,7 +321,6 @@ export default function ProfileSetup() {
             {step === 3 && 'Travel Style'}
             {step === 4 && 'Interests'}
             {step === 5 && 'Social Links'}
-            {step === 6 && 'Verify Phone'}
           </div>
           <div className="card-sub" style={{ marginBottom: '32px' }}>
             {step === 1 && 'Basic information'}
@@ -336,7 +328,6 @@ export default function ProfileSetup() {
             {step === 3 && 'How do you like to travel?'}
             {step === 4 && 'What do you enjoy?'}
             {step === 5 && 'How can people reach you?'}
-            {step === 6 && 'Verify your phone number'}
           </div>
 
           {error && (
@@ -603,6 +594,38 @@ export default function ProfileSetup() {
                 />
                 <label>Bio (optional)</label>
               </div>
+
+              <div style={{ position: 'relative' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center',
+                  width: '100%', height: '50px',
+                  borderRadius: '12px', border: '1.5px solid var(--input-border)',
+                  background: 'var(--input-bg)', boxSizing: 'border-box',
+                }}>
+                  <span style={{
+                    padding: '0 0 0 16px', fontSize: '15px', fontWeight: '600',
+                    color: 'var(--ink)', userSelect: 'none', whiteSpace: 'nowrap',
+                  }}>+91</span>
+                  <input
+                    type="tel"
+                    placeholder="Phone number"
+                    value={formData.phone || ''}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                    disabled={saving}
+                    maxLength={10}
+                    style={{
+                      width: '100%', height: '100%', padding: '0 16px',
+                      border: 'none', background: 'transparent', color: 'var(--ink)',
+                      fontSize: '15px', outline: 'none', boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+                <label style={{
+                  position: 'absolute', left: '16px', top: '-8px',
+                  fontSize: '11px', color: 'var(--accent)',
+                  background: 'var(--card-bg)', padding: '0 4px',
+                }}>Phone (optional)</label>
+              </div>
             </div>
           )}
 
@@ -810,7 +833,6 @@ export default function ProfileSetup() {
               {[
                 { key: 'instagram', label: 'Instagram', icon: '📷', placeholder: '@username' },
                 { key: 'whatsapp', label: 'WhatsApp', icon: '💬', placeholder: '+1 234 567 890' },
-                { key: 'phone', label: 'Phone', icon: '📱', placeholder: '+1 234 567 890' },
                 { key: 'twitter', label: 'Twitter / X', icon: '🐦', placeholder: '@username' },
                 { key: 'facebook', label: 'Facebook', icon: '👤', placeholder: 'Profile URL' },
                 { key: 'tiktok', label: 'TikTok', icon: '🎵', placeholder: '@username' },
@@ -866,11 +888,6 @@ export default function ProfileSetup() {
                 All fields are optional. Add what you're comfortable sharing.
               </div>
             </div>
-          )}
-
-          {/* Step 6: Phone Verification */}
-          {step === 6 && (
-            <PhoneVerificationStep formData={formData} setFormData={setFormData} />
           )}
 
           {/* Navigation Buttons */}

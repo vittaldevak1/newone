@@ -5,12 +5,11 @@ const User = require("../models/User");
 const { getCompatibilityScore } = require("../utils/matching");
 const protect = require("../middleware/authMiddleware");
 const requirePhoto = require("../middleware/requirePhoto");
-const requirePhone = require("../middleware/requirePhone");
 
 const router = express.Router();
 
 // ================= CREATE TRIP =================
-router.post("/", protect, requirePhoto, requirePhone, async (req, res) => {
+router.post("/", protect, requirePhoto, async (req, res) => {
   try {
     const { destination, startDate, endDate, activities, description, lookingFor, maxCompanions, tripType } = req.body;
 
@@ -168,7 +167,7 @@ router.get("/:tripId", protect, async (req, res) => {
 });
 
 // ================= UPDATE TRIP =================
-router.put("/:tripId", protect, requirePhoto, requirePhone, async (req, res) => {
+router.put("/:tripId", protect, requirePhoto, async (req, res) => {
   try {
     const trip = await Trip.findById(req.params.tripId);
 
