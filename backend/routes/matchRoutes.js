@@ -101,6 +101,7 @@ router.get("/discover", protect, async (req, res) => {
 router.post("/connect", protect, requirePhoto, async (req, res) => {
   try {
     const { targetUserId } = req.body;
+    console.log("CONNECT - from:", req.user.id, "to:", targetUserId);
 
     if (!targetUserId || targetUserId === req.user.id) {
       return res.status(400).json({ message: "Invalid target" });
@@ -193,6 +194,7 @@ router.put("/:matchId/decline", protect, requirePhoto, async (req, res) => {
 // ================= GET MY MATCHES =================
 router.get("/my", protect, async (req, res) => {
   try {
+    console.log("GET /my - user.id:", req.user.id);
     const matches = await Match.find({
       $or: [{ user1: req.user.id }, { user2: req.user.id }]
     })
@@ -201,6 +203,8 @@ router.get("/my", protect, async (req, res) => {
       .populate("trip1")
       .populate("trip2")
       .sort({ createdAt: -1 });
+
+    console.log("Found matches:", matches.length);
 
     // Deduplicate
     const seen = new Set();

@@ -30,13 +30,14 @@ export function AuthProvider({ children }) {
         if (res.ok) {
           const userData = await res.json();
           setUser(userData);
-        } else {
-          // Token expired or invalid
+        } else if (res.status === 401 || res.status === 403) {
+          // Token expired or invalid — only logout on auth errors
           logout();
         }
+        // On other errors (500, network), keep existing state
       } catch (err) {
         console.error("Fetch profile error:", err);
-        // Do not log out on network error so they don't get kicked out if offline
+        // Don't logout on network error
       } finally {
         setLoading(false);
       }

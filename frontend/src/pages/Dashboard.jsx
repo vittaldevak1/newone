@@ -143,7 +143,7 @@ export default function Dashboard() {
     return Math.round((filled / fields.length) * 100);
   };
 
-  const profilePercent = getProfileCompletion();
+  const profilePercent = user ? getProfileCompletion() : 0;
 
   if (loading) {
     return (
