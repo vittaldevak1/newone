@@ -39,20 +39,28 @@ export default function MessagesPanel() {
   useEffect(() => {
     const fetchConversations = async () => {
       try {
-        const [convos, perMatch] = await Promise.all([
-          matchApi.getConnections(),
-          messageApi.getUnreadPerMatch(),
-        ]);
+        const convos = await matchApi.getConnections();
         setConversations(convos);
-        setUnreadCounts(perMatch.unreadMap || {});
-        setLastMsgMap(perMatch.lastMsgMap || {});
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load conversations:', err);
       } finally {
         setLoading(false);
       }
     };
     fetchConversations();
+  }, []);
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const perMatch = await messageApi.getUnreadPerMatch();
+        setUnreadCounts(perMatch.unreadMap || {});
+        setLastMsgMap(perMatch.lastMsgMap || {});
+      } catch (err) {
+        console.error('Failed to load unread counts:', err);
+      }
+    };
+    fetchUnread();
   }, []);
 
   // Fetch messages when conversation opens (initial load only)

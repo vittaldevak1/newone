@@ -45,6 +45,14 @@ router.post("/", protect, requirePhoto, async (req, res) => {
         message: populated,
         matchId,
       });
+
+      const recipientId = match.user1.toString() === req.user.id
+        ? match.user2.toString()
+        : match.user1.toString();
+      io.to(`user:${recipientId}`).emit("message:notification", {
+        message: populated,
+        matchId,
+      });
     }
 
     res.status(201).json(populated);

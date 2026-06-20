@@ -89,14 +89,12 @@ export default function Notifications({ onNavigate }) {
     socket.on('match:new', handleNewMatch);
     socket.on('match:accepted', handleMatchAccepted);
     socket.on('match:declined', handleMatchDeclined);
-    socket.on('message:receive', handleMessageReceived);
     socket.on('message:notification', handleMessageReceived);
 
     return () => {
       socket.off('match:new', handleNewMatch);
       socket.off('match:accepted', handleMatchAccepted);
       socket.off('match:declined', handleMatchDeclined);
-      socket.off('message:receive', handleMessageReceived);
       socket.off('message:notification', handleMessageReceived);
     };
   }, [socket, myId]);
