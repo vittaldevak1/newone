@@ -92,8 +92,17 @@ function initSocket(server) {
           "name avatar"
         );
 
-        // Emit to match room
+        // Emit to match room (for active chat)
         io.to(`match:${matchId}`).emit("message:receive", {
+          message: populated,
+          matchId,
+        });
+
+        // Emit notification to recipient's personal room (for notification bell)
+        const recipientId = match.user1.toString() === userId
+          ? match.user2.toString()
+          : match.user1.toString();
+        io.to(`user:${recipientId}`).emit("message:notification", {
           message: populated,
           matchId,
         });
