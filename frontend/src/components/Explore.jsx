@@ -100,17 +100,15 @@ export default function Explore() {
       if (append) setTripsLoadingMore(true);
       else setTripsLoading(true);
 
-      const data = await tripApi.getUserTrips();
-      const allTrips = data || [];
-      const start = (pageNum - 1) * PAGE_SIZE;
-      const pageTrips = allTrips.slice(start, start + PAGE_SIZE);
+      const data = await tripApi.getDiscover({ page: pageNum, limit: PAGE_SIZE });
+      const newTrips = data || [];
 
       if (append) {
-        setTrips(prev => [...prev, ...pageTrips]);
+        setTrips(prev => [...prev, ...newTrips]);
       } else {
-        setTrips(pageTrips);
+        setTrips(newTrips);
       }
-      setTripsHasMore(start + PAGE_SIZE < allTrips.length);
+      setTripsHasMore(newTrips.length >= PAGE_SIZE);
     } catch (err) {
       console.error(err);
     } finally {

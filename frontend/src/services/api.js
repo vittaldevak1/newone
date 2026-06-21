@@ -36,6 +36,11 @@ export const tripApi = {
     request(`/api/trips/${tripId}`, { method: "PUT", body: JSON.stringify(tripData) }),
 
   delete: (tripId) => request(`/api/trips/${tripId}`, { method: "DELETE" }),
+
+  getDiscover: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/api/trips/discover?${query}`);
+  },
 };
 
 // ================= MATCHES =================

@@ -153,6 +153,31 @@ router.get("/user/trips", protect, async (req, res) => {
   }
 });
 
+// ================= GET OTHER USERS' TRIPS (for Trips Near Me) =================
+router.get("/discover", protect, async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+
+    const currentUser = await User.findById(req.user.id);
+    const blockedIds = currentUser?.blockedUsers || [];
+
+    const filter = {
+      user: { $ne: req.user.id, $nin: blockedIds },
+      status: "active",
+    };
+
+    const trips = await Trip.find(filter)
+      .populate("user", "-password")
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
+
+    res.status(200).json(trips);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 // ================= GET SINGLE TRIP =================
 router.get("/:tripId", protect, async (req, res) => {
   try {
