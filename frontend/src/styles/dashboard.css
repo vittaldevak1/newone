@@ -4397,23 +4397,21 @@ button.review-star:not(:disabled) {
 }
 
 .profile-completion-btn {
-  background: var(--accent);
-  border: none;
-  color: white;
+  background: transparent;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
   font-size: 11px;
   font-weight: 700;
-  padding: 5px 14px;
-  border-radius: 8px;
+  padding: 4px 12px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s;
   letter-spacing: 0.3px;
-  text-transform: uppercase;
 }
 
 .profile-completion-btn:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(108, 92, 231, 0.3);
+  background: var(--accent);
+  color: white;
 }
 
 .profile-completion-bar {
