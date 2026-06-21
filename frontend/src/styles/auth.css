@@ -4,6 +4,8 @@
   --accent: #ff6b5b;
   --accent-light: #ff8a7d;
   --accent-deep: #e55a4b;
+  --accent-hover: #e85a4a;
+  --accent-rgb: 255, 107, 91;
   --pink: #ff6b5b;
   --pink-light: #ff8a7d;
   --orange: #d4a574;
@@ -45,6 +47,8 @@
   --accent: #ff6b5b;
   --accent-light: #ff8a7d;
   --accent-deep: #e55a4b;
+  --accent-hover: #ff7a6b;
+  --accent-rgb: 255, 107, 91;
   --pink: #ff6b5b;
   --pink-light: #e88070;
   --orange: #d4a574;
@@ -142,7 +146,7 @@ body {
   height: 100vh;
   display: flex;
   background:
-    radial-gradient(circle at 10% 15%, rgba(108, 92, 231, 0.25), transparent 50%),
+    radial-gradient(circle at 10% 15%, rgba(var(--accent-rgb, 108, 92, 231), 0.25), transparent 50%),
     radial-gradient(circle at 90% 80%, rgba(253, 121, 168, 0.2), transparent 50%),
     radial-gradient(circle at 50% 50%, rgba(9, 132, 227, 0.1), transparent 60%),
     linear-gradient(160deg, var(--bg-stage-1) 0%, var(--bg-stage-2) 50%, var(--bg-stage-3) 100%);
@@ -213,7 +217,7 @@ body {
 
 .cloud svg {
   display: block;
-  filter: drop-shadow(0 8px 20px rgba(108, 92, 231, 0.08));
+  filter: drop-shadow(0 8px 20px rgba(var(--accent-rgb, 108, 92, 231), 0.08));
 }
 
 .cloud--a {
@@ -439,7 +443,7 @@ body {
   outline: none;
   background: var(--input-bg-focus);
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.12);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb, 108, 92, 231), 0.12);
 }
 
 .field input::placeholder {
@@ -483,13 +487,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.25s ease;
+  transition: all 0.2s ease;
   padding: 0;
   margin: 0;
 }
 
 .eye-toggle:hover {
   color: var(--accent);
+  transform: translateY(-50%) scale(1.1);
 }
 
 .eye-toggle svg {
@@ -549,19 +554,20 @@ body {
   align-items: center;
   justify-content: center;
   margin-top: 24px;
-  box-shadow: 0 8px 24px rgba(255, 107, 91, 0.3);
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb, 255, 107, 91), 0.3);
   transition: box-shadow 0.25s ease, transform 0.15s ease;
   position: relative;
   overflow: hidden;
 }
 
 .signin-btn:hover {
-  box-shadow: 0 12px 32px rgba(255, 107, 91, 0.4);
+  box-shadow: 0 12px 32px rgba(var(--accent-rgb, 255, 107, 91), 0.4);
   transform: translateY(-1px);
 }
 
 .signin-btn:active {
   transform: scale(0.97);
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb, 255, 107, 91), 0.2);
 }
 
 .signin-btn .shine {
@@ -621,8 +627,12 @@ body {
 
 .google-btn:hover {
   border-color: var(--accent-light);
-  box-shadow: 0 6px 16px -4px rgba(108, 92, 231, 0.25);
+  box-shadow: 0 6px 16px -4px rgba(var(--accent-rgb, 108, 92, 231), 0.25);
   transform: translateY(-1px);
+}
+
+.google-btn:active {
+  transform: scale(0.98);
 }
 
 .google-btn svg {
