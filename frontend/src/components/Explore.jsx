@@ -63,6 +63,7 @@ export default function Explore() {
   const [tripsPage, setTripsPage] = useState(1);
   const [tripsHasMore, setTripsHasMore] = useState(true);
   const [tripsLoadingMore, setTripsLoadingMore] = useState(false);
+  const [userTripsCount, setUserTripsCount] = useState(0);
   const tripsSentinelRef = useRef(null);
 
   // Fetch users for travelers tab
@@ -115,6 +116,20 @@ export default function Explore() {
       setTripsLoading(false);
       setTripsLoadingMore(false);
     }
+  }, []);
+
+  // Fetch user's own trip count to show correct empty state
+  useEffect(() => {
+    const fetchUserTripCount = async () => {
+      try {
+        const myTrips = await tripApi.getUserTrips();
+        const activeTrips = (myTrips || []).filter(t => t.status === 'active');
+        setUserTripsCount(activeTrips.length);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchUserTripCount();
   }, []);
 
   useEffect(() => {
@@ -450,8 +465,17 @@ export default function Explore() {
           ) : trips.length === 0 ? (
             <div className="explore-empty">
               <div className="explore-empty-icon">✈️</div>
-              <h3>No trips yet</h3>
-              <p>Create a trip to start matching with travel buddies!</p>
+              {userTripsCount > 0 ? (
+                <>
+                  <h3>No trips near you</h3>
+                  <p>No other travelers have trips that match yours yet. Check back later or explore travelers directly!</p>
+                </>
+              ) : (
+                <>
+                  <h3>No trips yet</h3>
+                  <p>Create a trip to start matching with travel buddies!</p>
+                </>
+              )}
             </div>
           ) : (
             <>
