@@ -2,7 +2,7 @@ const express = require("express");
 const Match = require("../models/Match");
 const User = require("../models/User");
 const Trip = require("../models/Trip");
-const { getCompatibilityScore } = require("../utils/matching");
+const { getCompatibilityScore, getRankingScore } = require("../utils/matching");
 const protect = require("../middleware/authMiddleware");
 const requirePhoto = require("../middleware/requirePhoto");
 
@@ -41,7 +41,7 @@ router.delete("/cleanup", protect, async (req, res) => {
 // ================= DISCOVER USERS =================
 router.get("/discover", protect, async (req, res) => {
   try {
-    const { travelStyle, nationality, interest, page = 1, limit = 20 } = req.query;
+    const { travelStyle, budget, travelPace, nationality, interest, page = 1, limit = 20 } = req.query;
     const currentUser = await User.findById(req.user.id);
 
     if (!currentUser) {
@@ -50,6 +50,8 @@ router.get("/discover", protect, async (req, res) => {
 
     const filter = { _id: { $ne: req.user.id } };
     if (travelStyle) filter.travelStyle = travelStyle;
+    if (budget) filter.budget = budget;
+    if (travelPace) filter.travelPace = travelPace;
     if (nationality) filter.nationality = { $regex: new RegExp(nationality, "i") };
     if (interest) filter.interests = { $in: [interest] };
 
@@ -77,16 +79,44 @@ router.get("/discover", protect, async (req, res) => {
       interactedIds.add(m.user2.toString());
     });
 
-    const discovered = users
-      .filter(u => !interactedIds.has(u._id.toString()))
-      .map(u => ({
-        ...u.toObject(),
-        compatibility: getCompatibilityScore(currentUser, u),
-        sharedInterests: currentUser.interests
-          ? currentUser.interests.filter(i => u.interests?.includes(i))
-          : [],
-      }))
-      .sort((a, b) => b.compatibility - a.compatibility);
+    // Get current user's active trips for trip-based scoring
+    const myTrips = await Trip.find({ user: req.user.id, status: "active" }).sort({ createdAt: -1 });
+    const myActiveTrip = myTrips.length > 0 ? myTrips[0] : null;
+
+    // Get all discoverable user IDs to fetch their trips in bulk
+    const discoverableUsers = users.filter(u => !interactedIds.has(u._id.toString()));
+    const discoverableIds = discoverableUsers.map(u => u._id);
+
+    // Bulk fetch active trips for all discoverable users
+    const theirTrips = await Trip.find({
+      user: { $in: discoverableIds },
+      status: "active"
+    }).sort({ createdAt: -1 });
+
+    // Map user ID to their most recent active trip
+    const theirTripMap = {};
+    theirTrips.forEach(t => {
+      const uid = t.user.toString();
+      if (!theirTripMap[uid]) theirTripMap[uid] = t;
+    });
+
+    const discovered = discoverableUsers
+      .map(u => {
+        const theirTrip = theirTripMap[u._id.toString()] || null;
+        const { compatibility, scoreType, breakdown } = getCompatibilityScore(currentUser, u, myActiveTrip, theirTrip);
+        const rankingScore = getRankingScore(compatibility, u);
+        return {
+          ...u.toObject(),
+          compatibility,
+          scoreType,
+          breakdown,
+          rankingScore,
+          sharedInterests: currentUser.interests
+            ? currentUser.interests.filter(i => u.interests?.includes(i))
+            : [],
+        };
+      })
+      .sort((a, b) => b.rankingScore - a.rankingScore);
 
     res.status(200).json({
       users: discovered,
@@ -120,18 +150,21 @@ router.post("/connect", protect, requirePhoto, async (req, res) => {
 
     const targetUser = await User.findById(targetUserId);
     const currentUser = await User.findById(req.user.id);
-    const score = getCompatibilityScore(currentUser, targetUser);
 
-    // Find trips (optional)
-    const myTrips = await Trip.find({ user: req.user.id, status: "active" }).sort({ createdAt: -1 }).limit(1);
-    const theirTrips = await Trip.find({ user: targetUserId, status: "active" }).sort({ createdAt: -1 }).limit(1);
+    // Find trips for both users
+    const myTrips = await Trip.find({ user: req.user.id, status: "active" }).sort({ createdAt: -1 });
+    const theirTrips = await Trip.find({ user: targetUserId, status: "active" }).sort({ createdAt: -1 });
+    const myTrip = myTrips.length > 0 ? myTrips[0] : null;
+    const theirTrip = theirTrips.length > 0 ? theirTrips[0] : null;
+
+    const { compatibility } = getCompatibilityScore(currentUser, targetUser, myTrip, theirTrip);
 
     const match = await Match.create({
       user1: req.user.id,
       user2: targetUserId,
-      trip1: myTrips.length > 0 ? myTrips[0]._id : null,
-      trip2: theirTrips.length > 0 ? theirTrips[0]._id : null,
-      compatibilityScore: score,
+      trip1: myTrip ? myTrip._id : null,
+      trip2: theirTrip ? theirTrip._id : null,
+      compatibilityScore: compatibility,
       initiatedBy: req.user.id,
       status: "pending"
     });

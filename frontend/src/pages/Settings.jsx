@@ -14,6 +14,19 @@ const TRAVEL_STYLES = [
   { id: 'family-friendly', icon: '👨‍👩‍👧‍👦', label: 'Family' },
 ];
 
+const BUDGET_OPTIONS = [
+  { id: 'budget', icon: '💰', label: 'Budget' },
+  { id: 'mid-range', icon: '💳', label: 'Mid-Range' },
+  { id: 'luxury', icon: '💎', label: 'Luxury' },
+  { id: 'flexible', icon: '🔄', label: 'Flexible' },
+];
+
+const TRAVEL_PACE_OPTIONS = [
+  { id: 'relaxed', icon: '🏖️', label: 'Relaxed' },
+  { id: 'balanced', icon: '⚖️', label: 'Balanced' },
+  { id: 'fast-paced', icon: '⚡', label: 'Fast-Paced' },
+];
+
 const INTEREST_OPTIONS = [
   'Hiking', 'Photography', 'Food & Dining', 'Nightlife', 'History',
   'Museums', 'Beach', 'Adventure Sports', 'Shopping', 'Nature',
@@ -155,10 +168,19 @@ export default function Settings() {
 
   // Travel preferences
   const [travelStyle, setTravelStyle] = useState(user?.travelStyle || '');
+  const [budget, setBudget] = useState(user?.budget || '');
+  const [travelPace, setTravelPace] = useState(user?.travelPace || '');
   const [interests, setInterests] = useState(user?.interests || []);
   const [languages, setLanguages] = useState(user?.languages || []);
   const [nationality, setNationality] = useState(user?.nationality || '');
   const [bio, setBio] = useState(user?.bio || '');
+
+  // Prompts
+  const [prompts, setPrompts] = useState({
+    idealTrip: user?.prompts?.idealTrip || '',
+    travelHabits: user?.prompts?.travelHabits || '',
+    lookingFor: user?.prompts?.lookingFor || '',
+  });
 
   // Travel history
   const [visitedPlaces, setVisitedPlaces] = useState(user?.visitedPlaces || []);
@@ -275,7 +297,7 @@ export default function Settings() {
     setSaving(true);
     setMsg(null);
     try {
-      await updateProfile({ travelStyle, interests, languages, nationality, bio });
+      await updateProfile({ travelStyle, budget, travelPace, interests, languages, nationality, bio, prompts });
       setMsg({ type: 'success', text: 'Travel preferences saved!' });
     } catch (err) {
       setMsg({ type: 'error', text: err.message });
@@ -524,6 +546,38 @@ export default function Settings() {
               </div>
 
               <div className="settings-field">
+                <label className="settings-label">Budget</label>
+                <div className="settings-chip-grid">
+                  {BUDGET_OPTIONS.map((b) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      className={`settings-chip ${budget === b.id ? 'selected' : ''}`}
+                      onClick={() => setBudget(b.id)}
+                    >
+                      <span>{b.icon}</span> {b.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="settings-field">
+                <label className="settings-label">Travel Pace</label>
+                <div className="settings-chip-grid">
+                  {TRAVEL_PACE_OPTIONS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className={`settings-chip ${travelPace === p.id ? 'selected' : ''}`}
+                      onClick={() => setTravelPace(p.id)}
+                    >
+                      <span>{p.icon}</span> {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="settings-field">
                 <label className="settings-label">Interests</label>
                 <p className="settings-hint">Select all that apply</p>
                 <div className="settings-chip-grid">
@@ -544,6 +598,33 @@ export default function Settings() {
                 <label className="settings-label">Languages</label>
                 <p className="settings-hint">Languages you speak</p>
                 <LangDropdown languages={languages} setLanguages={setLanguages} />
+              </div>
+
+              <div className="settings-field">
+                <label className="settings-label">Travel Prompts</label>
+                <p className="settings-hint">Tell travelers about yourself (optional)</p>
+                {[
+                  { key: 'idealTrip', label: 'My ideal trip is...', placeholder: 'e.g. a week exploring street food in Bangkok' },
+                  { key: 'travelHabits', label: 'When I travel, I usually...', placeholder: 'e.g. wake up early and walk everywhere' },
+                  { key: 'lookingFor', label: 'I\'m looking for travel companions who...', placeholder: 'e.g. are up for spontaneous adventures' },
+                ].map((prompt) => (
+                  <div key={prompt.key} style={{ marginBottom: '14px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--ink)', marginBottom: '6px' }}>
+                      {prompt.label}
+                    </label>
+                    <textarea
+                      value={prompts[prompt.key]}
+                      onChange={(e) => setPrompts({ ...prompts, [prompt.key]: e.target.value.slice(0, 250) })}
+                      placeholder={prompt.placeholder}
+                      maxLength={250}
+                      rows={2}
+                      className="settings-input settings-textarea"
+                    />
+                    <div style={{ fontSize: '11px', color: 'var(--label-color)', textAlign: 'right', marginTop: '4px' }}>
+                      {prompts[prompt.key].length}/250
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <button className="settings-btn-primary" onClick={handleSavePreferences} disabled={saving}>{saving ? 'Saving...' : 'Save Preferences'}</button>

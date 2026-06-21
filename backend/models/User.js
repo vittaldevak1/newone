@@ -50,9 +50,27 @@ const userSchema = new mongoose.Schema(
         default: ""
     },
 
+    budget: {
+        type: String,
+        enum: ["budget", "mid-range", "luxury", "flexible", ""],
+        default: ""
+    },
+
+    travelPace: {
+        type: String,
+        enum: ["relaxed", "balanced", "fast-paced", ""],
+        default: ""
+    },
+
     interests: [{
         type: String
     }],
+
+    prompts: {
+        idealTrip: { type: String, maxlength: 250, default: "" },
+        travelHabits: { type: String, maxlength: 250, default: "" },
+        lookingFor: { type: String, maxlength: 250, default: "" },
+    },
 
     social: {
         instagram: { type: String, default: "" },

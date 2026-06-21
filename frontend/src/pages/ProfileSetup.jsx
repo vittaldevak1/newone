@@ -52,6 +52,19 @@ const TRAVEL_STYLES = [
   { value: 'family-friendly', label: 'Family', icon: '👨‍👩‍👧‍👦', desc: 'Kid-safe, relaxed pace' },
 ];
 
+const BUDGET_OPTIONS = [
+  { value: 'budget', label: 'Budget', icon: '💰', desc: 'Keep costs low' },
+  { value: 'mid-range', label: 'Mid-Range', icon: '💳', desc: 'Balanced spending' },
+  { value: 'luxury', label: 'Luxury', icon: '💎', desc: 'Premium all the way' },
+  { value: 'flexible', label: 'Flexible', icon: '🔄', desc: 'Depends on the trip' },
+];
+
+const TRAVEL_PACE_OPTIONS = [
+  { value: 'relaxed', label: 'Relaxed', icon: '🏖️', desc: 'Beach days, cafés, slow mornings' },
+  { value: 'balanced', label: 'Balanced', icon: '⚖️', desc: 'A mix of activities and downtime' },
+  { value: 'fast-paced', label: 'Fast-Paced', icon: '⚡', desc: '5 attractions before lunch' },
+];
+
 export default function ProfileSetup() {
   const { theme, toggleTheme } = useContext(ThemeContext);
   const { user, updateProfile, loading } = useContext(AuthContext);
@@ -70,9 +83,16 @@ export default function ProfileSetup() {
     nationality: '',
     languages: [],
     travelStyle: '',
+    budget: '',
+    travelPace: '',
     interests: [],
     bio: '',
     avatar: '',
+    prompts: {
+      idealTrip: '',
+      travelHabits: '',
+      lookingFor: '',
+    },
     social: {
       instagram: '',
       whatsapp: '',
@@ -183,12 +203,8 @@ export default function ProfileSetup() {
       setError('Please select at least one language');
       return;
     }
-    if (step === 3 && !formData.travelStyle) {
-      setError('Please select your travel style');
-      return;
-    }
-    if (step === 4 && formData.interests.length === 0) {
-      setError('Please select at least one interest');
+    if (step === 3 && (!formData.travelStyle || !formData.budget || !formData.travelPace)) {
+      setError('Please fill in all travel profile fields');
       return;
     }
     setError(null);
@@ -210,11 +226,6 @@ export default function ProfileSetup() {
       return;
     }
 
-    if (formData.interests.length === 0) {
-      setError('Please select at least one interest');
-      return;
-    }
-
     setSaving(true);
     setError(null);
 
@@ -224,9 +235,12 @@ export default function ProfileSetup() {
         nationality: formData.nationality,
         languages: formData.languages,
         travelStyle: formData.travelStyle,
+        budget: formData.budget,
+        travelPace: formData.travelPace,
         interests: formData.interests,
         bio: formData.bio,
         avatar: formData.avatar,
+        prompts: formData.prompts,
         social: formData.social,
         phone: formData.phone ? `+91${formData.phone}` : '',
       });
@@ -318,15 +332,15 @@ export default function ProfileSetup() {
           <div className="card-title" style={{ fontSize: '1.75rem', marginBottom: '8px' }}>
             {step === 1 && 'About You'}
             {step === 2 && 'Languages'}
-            {step === 3 && 'Travel Style'}
-            {step === 4 && 'Interests'}
+            {step === 3 && 'Travel Profile'}
+            {step === 4 && 'Your Travel Personality'}
             {step === 5 && 'Social Links'}
           </div>
           <div className="card-sub" style={{ marginBottom: '32px' }}>
             {step === 1 && 'Basic information'}
             {step === 2 && 'What languages do you speak?'}
             {step === 3 && 'How do you like to travel?'}
-            {step === 4 && 'What do you enjoy?'}
+            {step === 4 && 'Tell us about yourself (prompts are optional)'}
             {step === 5 && 'How can people reach you?'}
           </div>
 
@@ -764,65 +778,184 @@ export default function ProfileSetup() {
             </div>
           )}
 
-          {/* Step 3: Travel Style */}
+          {/* Step 3: Travel Profile */}
           {step === 3 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%' }}>
-              {TRAVEL_STYLES.map((style) => (
-                <button
-                  key={style.value}
-                  type="button"
-                  onClick={() => setFormData({ ...formData, travelStyle: style.value })}
-                  disabled={saving}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '16px',
-                    padding: '16px 20px',
-                    borderRadius: '14px',
-                    border: '2px solid',
-                    borderColor: formData.travelStyle === style.value ? 'var(--accent)' : 'var(--input-border)',
-                    background: formData.travelStyle === style.value ? 'var(--accent-bg, rgba(99, 102, 241, 0.1))' : 'var(--input-bg)',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    textAlign: 'left',
-                  }}
-                >
-                  <span style={{ fontSize: '28px' }}>{style.icon}</span>
-                  <div>
-                    <div style={{ fontWeight: '600', color: 'var(--ink)', fontSize: '15px' }}>{style.label}</div>
-                    <div style={{ fontSize: '13px', color: 'var(--ink-soft)', marginTop: '2px' }}>{style.desc}</div>
-                  </div>
-                </button>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%' }}>
+              {/* Travel Style */}
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--ink)', marginBottom: '10px' }}>Travel Style</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {TRAVEL_STYLES.map((style) => (
+                    <button
+                      key={style.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, travelStyle: style.value })}
+                      disabled={saving}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '16px',
+                        padding: '14px 18px',
+                        borderRadius: '14px',
+                        border: '2px solid',
+                        borderColor: formData.travelStyle === style.value ? 'var(--accent)' : 'var(--input-border)',
+                        background: formData.travelStyle === style.value ? 'var(--accent-bg, rgba(99, 102, 241, 0.1))' : 'var(--input-bg)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <span style={{ fontSize: '24px' }}>{style.icon}</span>
+                      <div>
+                        <div style={{ fontWeight: '600', color: 'var(--ink)', fontSize: '14px' }}>{style.label}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--ink-soft)', marginTop: '2px' }}>{style.desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Budget */}
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--ink)', marginBottom: '10px' }}>Usual Budget</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {BUDGET_OPTIONS.map((b) => (
+                    <button
+                      key={b.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, budget: b.value })}
+                      disabled={saving}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '10px 16px',
+                        borderRadius: '12px',
+                        border: '2px solid',
+                        borderColor: formData.budget === b.value ? 'var(--accent)' : 'var(--input-border)',
+                        background: formData.budget === b.value ? 'var(--accent)' : 'var(--input-bg)',
+                        color: formData.budget === b.value ? 'white' : 'var(--ink)',
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <span>{b.icon}</span>
+                      {b.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Travel Pace */}
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--ink)', marginBottom: '10px' }}>Travel Pace</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {TRAVEL_PACE_OPTIONS.map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, travelPace: p.value })}
+                      disabled={saving}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '14px',
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        border: '2px solid',
+                        borderColor: formData.travelPace === p.value ? 'var(--accent)' : 'var(--input-border)',
+                        background: formData.travelPace === p.value ? 'var(--accent-bg, rgba(99, 102, 241, 0.1))' : 'var(--input-bg)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <span style={{ fontSize: '20px' }}>{p.icon}</span>
+                      <div>
+                        <div style={{ fontWeight: '600', color: 'var(--ink)', fontSize: '13px' }}>{p.label}</div>
+                        <div style={{ fontSize: '12px', color: 'var(--ink-soft)' }}>{p.desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Step 4: Interests */}
+          {/* Step 4: Travel Personality */}
           {step === 4 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '100%' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                {INTERESTS_OPTIONS.map((interest) => (
-                  <button
-                    key={interest}
-                    type="button"
-                    onClick={() => setFormData({ ...formData, interests: toggleArrayItem(formData.interests, interest) })}
-                    disabled={saving}
-                    style={{
-                      padding: '10px 18px',
-                      borderRadius: '24px',
-                      border: '2px solid',
-                      borderColor: formData.interests.includes(interest) ? 'var(--accent)' : 'var(--input-border)',
-                      background: formData.interests.includes(interest) ? 'var(--accent)' : 'var(--input-bg)',
-                      color: formData.interests.includes(interest) ? 'white' : 'var(--ink)',
-                      fontSize: '14px',
-                      fontWeight: '500',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    {interest}
-                  </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%' }}>
+              {/* Prompts */}
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--ink)', marginBottom: '12px' }}>
+                  Travel Prompts <span style={{ fontSize: '11px', color: 'var(--label-color)', fontWeight: '400' }}>(optional)</span>
+                </div>
+                {[
+                  { key: 'idealTrip', label: 'My ideal trip is...', placeholder: 'e.g. a week exploring street food in Bangkok' },
+                  { key: 'travelHabits', label: 'When I travel, I usually...', placeholder: 'e.g. wake up early and walk everywhere' },
+                  { key: 'lookingFor', label: 'I\'m looking for travel companions who...', placeholder: 'e.g. are up for spontaneous adventures' },
+                ].map((prompt) => (
+                  <div key={prompt.key} style={{ marginBottom: '14px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: 'var(--ink)', marginBottom: '6px' }}>
+                      {prompt.label}
+                    </label>
+                    <textarea
+                      value={formData.prompts[prompt.key]}
+                      onChange={(e) => setFormData({ ...formData, prompts: { ...formData.prompts, [prompt.key]: e.target.value.slice(0, 250) } })}
+                      placeholder={prompt.placeholder}
+                      maxLength={250}
+                      rows={2}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        borderRadius: '12px',
+                        border: '1.5px solid var(--input-border)',
+                        background: 'var(--input-bg)',
+                        fontSize: '14px',
+                        color: 'var(--ink)',
+                        resize: 'none',
+                        fontFamily: 'inherit',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                    <div style={{ fontSize: '11px', color: 'var(--label-color)', textAlign: 'right', marginTop: '4px' }}>
+                      {formData.prompts[prompt.key].length}/250
+                    </div>
+                  </div>
                 ))}
+              </div>
+
+              {/* Interests */}
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--ink)', marginBottom: '10px' }}>
+                  Interests <span style={{ fontSize: '11px', color: 'var(--label-color)', fontWeight: '400' }}>(optional)</span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                  {INTERESTS_OPTIONS.map((interest) => (
+                    <button
+                      key={interest}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, interests: toggleArrayItem(formData.interests, interest) })}
+                      disabled={saving}
+                      style={{
+                        padding: '10px 18px',
+                        borderRadius: '24px',
+                        border: '2px solid',
+                        borderColor: formData.interests.includes(interest) ? 'var(--accent)' : 'var(--input-border)',
+                        background: formData.interests.includes(interest) ? 'var(--accent)' : 'var(--input-bg)',
+                        color: formData.interests.includes(interest) ? 'white' : 'var(--ink)',
+                        fontSize: '14px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      {interest}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}

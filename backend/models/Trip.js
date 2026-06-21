@@ -41,6 +41,12 @@ const tripSchema = new mongoose.Schema(
       default: "travel-buddies"
     },
 
+    budget: {
+      type: String,
+      enum: ["budget", "mid-range", "luxury", "flexible", ""],
+      default: ""
+    },
+
     maxCompanions: {
       type: Number,
       min: 1,

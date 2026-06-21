@@ -11,7 +11,7 @@ const router = express.Router();
 // ================= CREATE TRIP =================
 router.post("/", protect, requirePhoto, async (req, res) => {
   try {
-    const { destination, startDate, endDate, activities, description, lookingFor, maxCompanions, tripType } = req.body;
+    const { destination, startDate, endDate, activities, description, lookingFor, maxCompanions, tripType, budget } = req.body;
 
     if (!destination) {
       return res.status(400).json({ message: "Destination is required" });
@@ -29,7 +29,8 @@ router.post("/", protect, requirePhoto, async (req, res) => {
         description: description || "",
         lookingFor: lookingFor || "travel-buddies",
         maxCompanions: maxCompanions || 4,
-        tripType: "immediate"
+        tripType: "immediate",
+        budget: budget || ""
       });
 
       const matchingTrips = await Trip.find({
@@ -52,13 +53,13 @@ router.post("/", protect, requirePhoto, async (req, res) => {
         });
 
         if (!existingMatch) {
-          const score = getCompatibilityScore(currentUser, otherTrip.user);
+          const { compatibility } = getCompatibilityScore(currentUser, otherTrip.user, trip, otherTrip);
           const match = await Match.create({
             user1: req.user.id,
             user2: otherTrip.user._id,
             trip1: trip._id,
             trip2: otherTrip._id,
-            compatibilityScore: score,
+            compatibilityScore: compatibility,
             initiatedBy: req.user.id
           });
           matches.push(match);
@@ -93,7 +94,8 @@ router.post("/", protect, requirePhoto, async (req, res) => {
       description: description || "",
       lookingFor: lookingFor || "travel-buddies",
       maxCompanions: maxCompanions || 4,
-      tripType: "planned"
+      tripType: "planned",
+      budget: budget || ""
     });
 
     // Find potential matches
@@ -117,13 +119,13 @@ router.post("/", protect, requirePhoto, async (req, res) => {
       });
 
       if (!existingMatch) {
-        const score = getCompatibilityScore(currentUser, otherTrip.user);
+        const { compatibility } = getCompatibilityScore(currentUser, otherTrip.user, trip, otherTrip);
         const match = await Match.create({
           user1: req.user.id,
           user2: otherTrip.user._id,
           trip1: trip._id,
           trip2: otherTrip._id,
-          compatibilityScore: score,
+          compatibilityScore: compatibility,
           initiatedBy: req.user.id
         });
         matches.push(match);
@@ -179,7 +181,7 @@ router.put("/:tripId", protect, requirePhoto, async (req, res) => {
       return res.status(403).json({ message: "Not authorized to update this trip" });
     }
 
-    const { destination, startDate, endDate, activities, description, lookingFor, maxCompanions, status, itinerary } = req.body;
+    const { destination, startDate, endDate, activities, description, lookingFor, maxCompanions, status, itinerary, budget } = req.body;
 
     const updateFields = {};
     if (destination !== undefined) updateFields.destination = destination;
@@ -191,6 +193,7 @@ router.put("/:tripId", protect, requirePhoto, async (req, res) => {
     if (maxCompanions !== undefined) updateFields.maxCompanions = maxCompanions;
     if (status !== undefined) updateFields.status = status;
     if (itinerary !== undefined) updateFields.itinerary = itinerary;
+    if (budget !== undefined) updateFields.budget = budget;
 
     const updated = await Trip.findByIdAndUpdate(
       req.params.tripId,

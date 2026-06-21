@@ -11,6 +11,13 @@ const ACTIVITY_ICONS = {
   'Wildlife': '🦁', 'Camping': '⛺', 'Water Sports': '🏄', 'Cycling': '🚴'
 };
 
+const BUDGET_LABELS = {
+  'budget': '💰 Budget',
+  'mid-range': '💳 Mid-Range',
+  'luxury': '💎 Luxury',
+  'flexible': '🔄 Flexible',
+};
+
 export default function TripCard({ trip, onDelete, onTripUpdated }) {
   const [deleting, setDeleting] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
@@ -115,6 +122,10 @@ export default function TripCard({ trip, onDelete, onTripUpdated }) {
 
       {trip.description && (
         <p className="trip-card-desc">{trip.description}</p>
+      )}
+
+      {trip.budget && (
+        <div className="trip-card-budget">{BUDGET_LABELS[trip.budget]}</div>
       )}
 
       <div className="trip-card-footer">

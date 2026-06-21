@@ -12,6 +12,13 @@ const DURATIONS = [
   { label: '2 weeks', days: 13 },
 ];
 
+const BUDGET_OPTIONS = [
+  { value: 'budget', icon: '💰', label: 'Budget' },
+  { value: 'mid-range', icon: '💳', label: 'Mid-Range' },
+  { value: 'luxury', icon: '💎', label: 'Luxury' },
+  { value: 'flexible', icon: '🔄', label: 'Flexible' },
+];
+
 export default function TripForm({ onClose, onTripCreated }) {
   const [mode, setMode] = useState(null); // null | 'immediate' | 'planned'
   const [saving, setSaving] = useState(false);
@@ -21,6 +28,7 @@ export default function TripForm({ onClose, onTripCreated }) {
   const [destination, setDestination] = useState('');
   const [activities, setActivities] = useState([]);
   const [lookingFor, setLookingFor] = useState('travel-buddies');
+  const [budget, setBudget] = useState('');
   const [description, setDescription] = useState('');
   const [duration, setDuration] = useState(0);
   const [startDate, setStartDate] = useState('');
@@ -59,6 +67,7 @@ export default function TripForm({ onClose, onTripCreated }) {
         destination: destination.trim(),
         activities,
         lookingFor,
+        budget,
         description,
         tripType: mode,
       };
@@ -195,6 +204,24 @@ export default function TripForm({ onClose, onTripCreated }) {
               placeholder="e.g. Bali, Paris, Goa..."
               disabled={saving}
             />
+          </div>
+
+          {/* Budget */}
+          <div className="trip-field">
+            <label className="trip-label">Budget <span className="trip-optional">(optional)</span></label>
+            <div className="trip-budget-grid">
+              {BUDGET_OPTIONS.map((b) => (
+                <button
+                  key={b.value}
+                  className={`trip-budget-btn ${budget === b.value ? 'active' : ''}`}
+                  onClick={() => setBudget(budget === b.value ? '' : b.value)}
+                  disabled={saving}
+                >
+                  <span>{b.icon}</span>
+                  {b.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Duration (immediate) or Dates (planned) */}

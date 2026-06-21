@@ -196,7 +196,7 @@ router.put("/profile", protect, async (req, res) => {
 
     try {
 
-        const { age, bio, nationality, languages, travelStyle, interests, avatar, social, visitedPlaces, wishlist, privacy, name, email, currentPassword, newPassword } = req.body;
+        const { age, bio, nationality, languages, travelStyle, interests, avatar, social, visitedPlaces, wishlist, privacy, name, email, currentPassword, newPassword, budget, travelPace, prompts } = req.body;
 
         const updateFields = {};
 
@@ -212,6 +212,9 @@ router.put("/profile", protect, async (req, res) => {
         if (wishlist !== undefined) updateFields.wishlist = wishlist;
         if (privacy !== undefined) updateFields.privacy = privacy;
         if (name !== undefined) updateFields.name = name;
+        if (budget !== undefined) updateFields.budget = budget;
+        if (travelPace !== undefined) updateFields.travelPace = travelPace;
+        if (prompts !== undefined) updateFields.prompts = prompts;
 
         // Handle email change
         if (email !== undefined) {
@@ -239,7 +242,7 @@ router.put("/profile", protect, async (req, res) => {
         }
 
         // Mark profile as complete if key fields are filled
-        if (age && travelStyle && interests && interests.length > 0) {
+        if (age && travelStyle && languages && languages.length > 0) {
             updateFields.profileComplete = true;
         }
 

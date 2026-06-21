@@ -9,6 +9,19 @@ const TRAVEL_STYLES = {
   'family-friendly': { icon: '👨‍👩‍👧‍👦', label: 'Family' },
 };
 
+const BUDGET_LABELS = {
+  'budget': '💰 Budget',
+  'mid-range': '💳 Mid-Range',
+  'luxury': '💎 Luxury',
+  'flexible': '🔄 Flexible',
+};
+
+const PACE_LABELS = {
+  'relaxed': '🏖️ Relaxed',
+  'balanced': '⚖️ Balanced',
+  'fast-paced': '⚡ Fast-Paced',
+};
+
 export default function MatchCard({ match, onAccept, onDecline, onViewProfile }) {
   const { user } = useContext(AuthContext);
 
@@ -41,6 +54,10 @@ export default function MatchCard({ match, onAccept, onDecline, onViewProfile })
     match.compatibilityScore >= 60 ? '#f59e0b' :
     match.compatibilityScore >= 40 ? '#f97316' : '#ef4444';
 
+  // Determine score type based on whether both trips exist
+  const hasTrips = match.trip1 && match.trip2;
+  const scoreType = hasTrips ? 'trip' : 'profile';
+
   return (
     <div className="match-card">
       <div className="match-card-header" onClick={() => onViewProfile?.(otherUser)} style={{ cursor: 'pointer' }}>
@@ -56,11 +73,13 @@ export default function MatchCard({ match, onAccept, onDecline, onViewProfile })
           <div className="match-card-tags">
             {otherUser.nationality && <span className="match-tag">{otherUser.nationality}</span>}
             {travel && <span className="match-tag">{travel.icon} {travel.label}</span>}
+            {otherUser.budget && <span className="match-tag">{BUDGET_LABELS[otherUser.budget]}</span>}
+            {otherUser.travelPace && <span className="match-tag">{PACE_LABELS[otherUser.travelPace]}</span>}
           </div>
         </div>
         <div className="match-card-score" style={{ borderColor: scoreColor }}>
           <span className="score-value" style={{ color: scoreColor }}>{match.compatibilityScore}%</span>
-          <span className="score-label">Match</span>
+          <span className="score-label">{scoreType === 'trip' ? 'Trip Match' : 'Profile Match'}</span>
         </div>
       </div>
 
